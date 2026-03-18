@@ -7,8 +7,7 @@ const helmet = require("helmet");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-const { sql, config } = require("./db");
-
+const { sql, pool, poolConnect } = require("./db");
 
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -24,21 +23,19 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
-
-(async () => {
+app.use(async (req, res, next) => {
   try {
-    console.log('DB startup config -> server:', config.server, 'port:', config.port, 'encrypt:', config.options && config.options.encrypt, 'trustServerCertificate:', config.options && config.options.trustServerCertificate);
-    await sql.connect(config);
-    const r = await new sql.Request().query("SELECT @@SERVERNAME AS server, DB_NAME() AS db");
-    console.log("🧭 Connected to DB:", r.recordset[0]);
-
-    console.log("✅ DB connected in server.js");
+    await poolConnect;
+    next();
   } catch (err) {
-    console.error("❌ DB connect error in server.js:", err);
+    console.error("DB not ready:", err);
+    res.status(500).send("Database not connected");
   }
-})();
+});
+app.use(express.urlencoded({ extended: true })); 
+app.use(express.static(path.join(__dirname, "public")));
+//ngerngvoenvoinkniujni
+
 
 // ========== إعداد SMTP (الإيميل) ==========
 
@@ -90,7 +87,7 @@ async function getOrCreatePrivateRoom(user1, user2) {
   const [nameA, nameB] = normalizePair(user1, user2);
 
   // جلب Id للمستخدمين
-  let request = new sql.Request();
+  let request = pool.request();
   const usersRes = await request
     .input("U1", sql.NVarChar(50), nameA)
     .input("U2", sql.NVarChar(50), nameB)
@@ -111,7 +108,7 @@ async function getOrCreatePrivateRoom(user1, user2) {
   }
 
   // البحث عن غرفة موجودة مسبقًا
-  request = new sql.Request();
+  request = pool.request();
   let roomRes = await request
     .input("IdA", sql.Int, idA)
     .input("IdB", sql.Int, idB)
@@ -130,7 +127,7 @@ async function getOrCreatePrivateRoom(user1, user2) {
   }
 
   // إنشاء غرفة جديدة
-  request = new sql.Request();
+  request = pool.request();
   const insertRes = await request
     .input("Name", sql.NVarChar(100), `${nameA} - ${nameB}`)
     .input("IdA", sql.Int, idA)
@@ -166,7 +163,7 @@ async function comparePassword(plain, hash) {
 // 🧑‍🤝‍🧑 API: جلب جميع المستخدمين (للاختيار من القائمة)
 app.get("/api/users", async (req, res) => {
   try {
-    const result = await sql.query(`
+    const result = await pool.request().query(`
       SELECT Id, Username
       FROM Users
       ORDER BY Username
@@ -189,7 +186,7 @@ app.post("/api/users", async (req, res) => {
   try {
     const cleanName = username.trim();
 
-    let request = new sql.Request();
+    let request = pool.request();
     let existing = await request
       .input("Username", sql.NVarChar(50), cleanName)
       .query("SELECT Id FROM Users WHERE Username = @Username");
@@ -198,7 +195,7 @@ app.post("/api/users", async (req, res) => {
       return res.status(409).json({ error: "Kullanıcı zaten var" });
     }
 
-    request = new sql.Request();
+    request = pool.request();
     const insertUser = await request
       .input("Username", sql.NVarChar(50), cleanName)
       .input("PasswordHash", sql.NVarChar(255), "dummy")
@@ -225,7 +222,7 @@ app.get("/api/contacts/:username", async (req, res) => {
 
   try {
     // 1) جلب Id المستخدم
-    let request = new sql.Request();
+    let request = pool.request();
     const userRes = await request
       .input("Username", sql.NVarChar(50), username)
       .query("SELECT Id FROM Users WHERE Username = @Username");
@@ -237,7 +234,7 @@ app.get("/api/contacts/:username", async (req, res) => {
     const userId = userRes.recordset[0].Id;
 
     // 2) جلب contacts المقبولين فقط
-    request = new sql.Request();
+    request = pool.request();
     const contactsRes = await request
       .input("UserId", sql.Int, userId)
       .query(`
@@ -268,7 +265,7 @@ app.post("/api/contacts/accept", async (req, res) => {
 
   try {
     // 1) جلب الطلب الحالي
-    let request = new sql.Request();
+    let request = pool.request();
     const contactRes = await request
       .input("Id", sql.Int, contactId)
       .query(`
@@ -291,7 +288,7 @@ app.post("/api/contacts/accept", async (req, res) => {
     const userB = contact.ContactUserId;
 
     // 2) تحديث الطلب الحالي إلى accepted
-    request = new sql.Request();
+    request = pool.request();
     await request
       .input("Id", sql.Int, contactId)
       .query(`
@@ -301,7 +298,7 @@ app.post("/api/contacts/accept", async (req, res) => {
       `);
 
     // 3) التأكد من وجود السطر العكسي
-    request = new sql.Request();
+    request = pool.request();
     const reverseCheck = await request
       .input("A", sql.Int, userB)
       .input("B", sql.Int, userA)
@@ -311,7 +308,7 @@ app.post("/api/contacts/accept", async (req, res) => {
       `);
 
     if (reverseCheck.recordset.length === 0) {
-      request = new sql.Request();
+      request = pool.request();
       await request
         .input("A", sql.Int, userB)
         .input("B", sql.Int, userA)
@@ -339,7 +336,7 @@ app.post("/api/contacts/reject", async (req, res) => {
 
   try {
     // 1) جلب الطلب الحالي
-    let request = new sql.Request();
+    let request = pool.request();
     const contactRes = await request
       .input("Id", sql.Int, contactId)
       .query(`
@@ -359,7 +356,7 @@ app.post("/api/contacts/reject", async (req, res) => {
     }
 
     // 2) حذف الطلب
-    request = new sql.Request();
+    request = pool.request();
     await request
       .input("Id", sql.Int, contactId)
       .query(`
@@ -385,7 +382,7 @@ app.get("/api/contacts/requests/:username", async (req, res) => {
 
   try {
     // 1) جلب Id المستخدم
-    let request = new sql.Request();
+    let request = pool.request();
     const userRes = await request
       .input("Username", sql.NVarChar(50), username)
       .query("SELECT Id FROM Users WHERE Username = @Username");
@@ -397,7 +394,7 @@ app.get("/api/contacts/requests/:username", async (req, res) => {
     const userId = userRes.recordset[0].Id;
 
     // 2) جلب الطلبات الواردة pending
-    request = new sql.Request();
+    request = pool.request();
     const pendingRes = await request
       .input("UserId", sql.Int, userId)
       .query(`
@@ -446,7 +443,7 @@ app.post("/api/register", async (req, res) => {
     }
 
     // 3) التأكد من عدم وجود مستخدم نهائي بنفس الاسم أو الإيميل في جدول Users
-    let request = new sql.Request();
+    let request = pool.request();
     const existingFinal = await request
       .input("Username", sql.NVarChar(50), cleanUsername)
       .input("Email", sql.NVarChar(100), cleanEmail)
@@ -628,7 +625,7 @@ app.post("/api/verify-email", async (req, res) => {
     }
 
     // 1) إنشاء المستخدم الحقيقي في جدول Users مع IsEmailVerified = 1
-    let request = new sql.Request();
+    let request = pool.request();
     const insertUser = await request
       .input("Username", sql.NVarChar(50), pending.username)
       .input("Email", sql.NVarChar(100), pending.email)
@@ -661,23 +658,13 @@ app.post("/api/verify-email", async (req, res) => {
 });
 // 🔐 API: تسجيل الدخول بواسطة (إيميل أو اسم مستخدم) + كلمة مرور
 app.post("/api/login", async (req, res) => {
-  
   try {
+    await poolConnect; // 🔥 مهم جداً
+
     const { login, password } = req.body;
 
-    // 1) تحقق من المدخلات
-    if (!login || !login.trim() || !password) {
-      return res
-        .status(400)
-        .json({ error: "يجب إدخال اسم المستخدم/الإيميل وكلمة المرور" });
-    }
-
-    const loginValue = login.trim();
-
-    // 2) البحث عن المستخدم حسب الإيميل أو اسم المستخدم
-    const request = new sql.Request();
-    const result = await request
-      .input("Login", sql.NVarChar(100), loginValue)
+    const result = await pool.request()
+      .input("Login", sql.NVarChar(100), login.trim())
       .query(`
         SELECT TOP 1 Id, Username, Email, PasswordHash
         FROM Users
@@ -690,36 +677,20 @@ app.post("/api/login", async (req, res) => {
 
     const user = result.recordset[0];
 
-    // 3) مقارنة كلمة المرور
     const isMatch = await comparePassword(password, user.PasswordHash);
     if (!isMatch) {
       return res.status(401).json({ error: "كلمة المرور غير صحيحة" });
     }
 
-    // 4) تحديث LastLogin بعد نجاح التحقق
-    try{
-      await new sql.Request()
+    await pool.request()
       .input("Id", sql.Int, user.Id)
       .query("UPDATE Users SET LastLogin = SYSDATETIME() WHERE Id = @Id");
 
+    res.json({ success: true, user });
 
-    }catch(e){
-      console.warn("Could not update LastLogin:", e.message);
-    }
-    
-    
-    // 5) نجاح تسجيل الدخول
-    return res.json({
-      success: true,
-      user: {
-        Id: user.Id,
-        Username: user.Username,
-        Email: user.Email
-      }
-    });
   } catch (err) {
     console.error("Error in /api/login:", err);
-    return res.status(500).json({ error: "خطأ في السيرفر" });
+    res.status(500).send("Server error");
   }
 });
 
@@ -734,7 +705,7 @@ app.get("/api/messages", async (req, res) => {
   try {
     const { roomId } = await getOrCreatePrivateRoom(user1, user2);
 
-    let request = new sql.Request();
+    let request = pool.request();
     const result = await request
       .input("RoomId", sql.Int, roomId)
       .query(`
@@ -765,7 +736,7 @@ app.post("/api/contacts/request", async (req, res) => {
 
   try {
     // جلب Id المستخدم المرسل
-    let request = new sql.Request();
+    let request = pool.request();
     const senderResult = await request
       .input("senderUsername", sql.NVarChar(50), senderUsername.trim())
       .query("SELECT Id FROM Users WHERE Username = @senderUsername");
@@ -778,7 +749,7 @@ app.post("/api/contacts/request", async (req, res) => {
 
     // جلب المستخدم المستقبل
     const trimmedUsername = username.trim();
-    request = new sql.Request();
+    request = pool.request();
     const userResult = await request
       .input("username", sql.NVarChar(50), trimmedUsername)
       .query("SELECT Id FROM Users WHERE Username = @username");
@@ -796,7 +767,7 @@ app.post("/api/contacts/request", async (req, res) => {
     }
 
     // التحقق من وجود علاقة موجودة (مقبولة أو قيد الانتظار)
-    request = new sql.Request();
+    request = pool.request();
     const check = await request
       .input("u1", sql.Int, senderId)
       .input("u2", sql.Int, receiverId)
@@ -816,7 +787,7 @@ app.post("/api/contacts/request", async (req, res) => {
     }
 
     // إدخال الطلب
-    request = new sql.Request();
+    request = pool.request();
     await request
       .input("u1", sql.Int, senderId)
       .input("u2", sql.Int, receiverId)
@@ -859,7 +830,7 @@ io.on("connection", (socket) => {
       const { roomId } = await getOrCreatePrivateRoom(from, to);
 
       // جلب Id للمُرسل
-      let request = new sql.Request();
+      let request = pool.request();
       const userRes = await request
         .input("Username", sql.NVarChar(50), from)
         .query("SELECT Id FROM Users WHERE Username = @Username");
@@ -872,7 +843,7 @@ io.on("connection", (socket) => {
       const userId = userRes.recordset[0].Id;
 
       // إدخال الرسالة في Messages (استخدم SCOPE_IDENTITY بدلاً من OUTPUT)
-      request = new sql.Request();
+      request = pool.request();
       const insertRes = await request
         .input("RoomId", sql.Int, roomId)
         .input("UserId", sql.Int, userId)
