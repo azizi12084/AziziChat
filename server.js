@@ -1,7 +1,7 @@
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
-
+console.log("POOL TEST:", pool);
 const express = require("express");
 const helmet = require("helmet");
 const http = require("http");
