@@ -1,14 +1,14 @@
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
-console.log("POOL TEST:", pool);
+
 const express = require("express");
 const helmet = require("helmet");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const { sql, pool, poolConnect } = require("./db");
-
+console.log("POOL TEST:", pool);
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const pendingUsers = new Map();
