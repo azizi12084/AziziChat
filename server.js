@@ -659,7 +659,7 @@ app.post("/api/verify-email", async (req, res) => {
 // 🔐 API: تسجيل الدخول بواسطة (إيميل أو اسم مستخدم) + كلمة مرور
 app.post("/api/login", async (req, res) => {
   try {
-    await poolConnect; // 🔥 مهم جداً
+    //await poolConnect; // 🔥 مهم جداً
 
     const { login, password } = req.body;
 
@@ -880,6 +880,18 @@ app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-});
+(async () => {
+  try {
+    await poolConnect;  // 🔥 انتظر الاتصال
+
+    console.log("✅ DB Ready");
+
+    server.listen(PORT, () => {
+      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("❌ Failed to connect DB:", err);
+    process.exit(1);
+  }
+})();
