@@ -43,6 +43,15 @@ It allows users to communicate instantly, manage contacts, and store messages se
 
 ---
 
+
+## 📸 Screenshots
+
+### Login Page
+![Login Page](login.png)
+
+### Register Page
+![Register Page](register.png)
+
 ## ⚙️ How to Run Locally
 
 ```bash
