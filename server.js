@@ -8,6 +8,8 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const { sql, pool, poolConnect } = require("./db_postgres_compat");console.log("POOL TEST:", pool);
+
+const { Resend } = require("resend");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const pendingUsers = new Map();
@@ -59,8 +61,40 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendVerificationEmail(toEmail, code) {
+  if (process.env.EMAIL_PROVIDER === "resend") {
+    console.log("Using Resend email provider");
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM || "Azizi Chat <onboarding@resend.dev>",
+      to: toEmail,
+      subject: "Azizi Chat - E-posta Doğrulama Kodu",
+      html: `
+        <p>Merhaba,</p>
+        <p>Azizi Chat hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
+        <h2>${code}</h2>
+        <p>Kodun geçerlilik süresi <strong>10 dakikadır</strong>.</p>
+      `,
+      text: `Merhaba,
+
+Azizi Chat hesabınızı doğrulamak için kodunuz: ${code}
+
+Kod 10 dakika boyunca geçerlidir.`
+    });
+
+    if (error) {
+      console.error("Resend email error:", error);
+      throw new Error(error.message || "Resend email failed");
+    }
+
+    console.log("Resend email sent:", data);
+    return;
+  }
+
+  console.log("Using SMTP email provider");
+
   const mailOptions = {
-    //from: process.env.EMAIL_FROM || '"Azizi Chat" <no-reply@azizichat.com>',
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: toEmail,
     subject: "Azizi Chat - E-posta Doğrulama Kodu",
@@ -606,7 +640,7 @@ app.post("/api/register", async (req, res) => {
 
 app.post("/api/verify-email", async (req, res) => {
   const { userId, code } = req.body; // userId هنا = pendingId من الذاكرة
-
+  console.log("VERIFY BODY:", req.body);
   if (!userId || !code) {
     return res.status(400).json({ error: "userId و code مطلوبان" });
   }

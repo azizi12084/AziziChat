@@ -159,10 +159,10 @@ const pool = {
 
 console.log("Trying PostgreSQL connection...");
 
-const poolConnect = pgPool
-  .query("SELECT NOW()")
-  .then(() => {
+const poolConnect = pgPool.connect()
+  .then((client) => {
     console.log("✅ Connected to PostgreSQL");
+    client.release();
   })
   .catch((err) => {
     console.error("❌ PostgreSQL connection failed:", err);
