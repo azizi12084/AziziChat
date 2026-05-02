@@ -7,8 +7,7 @@ const helmet = require("helmet");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-const { sql, pool, poolConnect } = require("./db");
-console.log("POOL TEST:", pool);
+const { sql, pool, poolConnect } = require("./db_postgres_compat");console.log("POOL TEST:", pool);
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const pendingUsers = new Map();
@@ -146,7 +145,7 @@ async function getOrCreatePrivateRoom(user1, user2) {
     .query(`
       INSERT INTO Rooms (Name, IsPrivate, User1Id, User2Id)
       OUTPUT Inserted.Id
-      VALUES (@Name, 1, @IdA, @IdB)
+      VALUES (@Name, true, @IdA, @IdB)
     `);
 
   const roomId = insertRes.recordset[0].Id;
@@ -854,6 +853,7 @@ io.on("connection", (socket) => {
       const userId = userRes.recordset[0].Id;
 
       // إدخال الرسالة في Messages (استخدم SCOPE_IDENTITY بدلاً من OUTPUT)
+      // إدخال الرسالة في Messages
       request = pool.request();
       const insertRes = await request
         .input("RoomId", sql.Int, roomId)
@@ -861,8 +861,8 @@ io.on("connection", (socket) => {
         .input("Content", sql.NVarChar(sql.MAX), text)
         .query(`
           INSERT INTO Messages (RoomId, UserId, Content)
-          VALUES (@RoomId, @UserId, @Content);
-          SELECT TOP 1 Id, CreatedAt FROM Messages WHERE Id = SCOPE_IDENTITY();
+          VALUES (@RoomId, @UserId, @Content)
+          RETURNING Id, CreatedAt
         `);
 
       const inserted = insertRes.recordset && insertRes.recordset[0];
