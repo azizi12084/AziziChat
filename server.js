@@ -39,10 +39,20 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ========== إعداد SMTP (الإيميل) ==========
 
+//const transporter = nodemailer.createTransport({
+  //host: process.env.SMTP_HOST,
+  //port: Number(process.env.SMTP_PORT) || 587,
+  //secure: false, 
+  //auth: {
+    //user: process.env.SMTP_USER,
+    //pass: process.env.SMTP_PASS
+  //}
+//});
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, 
+  port: Number(process.env.SMTP_PORT),
+  secure: process.env.SMTP_SECURE === "true",
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
@@ -51,7 +61,8 @@ const transporter = nodemailer.createTransport({
 
 async function sendVerificationEmail(toEmail, code) {
   const mailOptions = {
-    from: process.env.EMAIL_FROM || '"Azizi Chat" <no-reply@azizichat.com>',
+    //from: process.env.EMAIL_FROM || '"Azizi Chat" <no-reply@azizichat.com>',
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: toEmail,
     subject: "Azizi Chat - E-posta Doğrulama Kodu",
     text: `Merhaba,
