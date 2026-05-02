@@ -27,7 +27,7 @@ function normalizeRow(row) {
     else if (lower === "createdat") mapped.CreatedAt = row[key];
     else if (lower === "lastlogin") mapped.LastLogin = row[key];
     else if (lower === "isactive") mapped.IsActive = row[key];
-
+    else if (lower === "fromuser") mapped.FromUser = row[key];
     else if (lower === "contactid") mapped.ContactId = row[key];
     else if (lower === "userid") mapped.UserId = row[key];
     else if (lower === "contactuserid") mapped.ContactUserId = row[key];
