@@ -575,7 +575,7 @@ app.post("/api/register", async (req, res) => {
       // إرسال الإيميل بالكود الجديد
       try {
         await sendVerificationEmail(p.email, newCode);
-        console.log("Resent verification email to:", p.email, "code:", newCode);
+        console.log("Resent verification email to:", p.email);
       } catch (emailErr) {
         console.error("Error resending verification email:", emailErr);
         return res
@@ -616,7 +616,7 @@ app.post("/api/register", async (req, res) => {
 
     try {
       await sendVerificationEmail(cleanEmail, code);
-      console.log("Verification email sent to:", cleanEmail, "code:", code);
+      console.log("Verification email sent to:", cleanEmail);
     } catch (emailErr) {
       console.error("Error sending verification email:", emailErr);
         }
