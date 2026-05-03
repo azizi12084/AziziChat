@@ -864,7 +864,7 @@ async function loadPendingRequests() {
 // قبول طلب صداقة
 async function handleAcceptRequest(contactId) {
   try {
-    const res = await fetch("/api/contacts/accept", {
+    const res = await fetchWithTimeout("/api/contacts/accept", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contactId })
@@ -873,7 +873,7 @@ async function handleAcceptRequest(contactId) {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      alert(data.error || "فشل قبول طلب الصداقة");
+      showContactMessage("error", data.error || "فشل قبول طلب الصداقة");
       return;
     }
 
@@ -881,11 +881,11 @@ async function handleAcceptRequest(contactId) {
     await loadPendingRequests();
     await loadUsers();
 
-    alert("تم قبول طلب الصداقة بنجاح");
+    showContactMessage("success", "تم قبول طلب الصداقة بنجاح");
 
   } catch (err) {
     console.error("Error accepting request:", err);
-    alert("خطأ في الاتصال بالسيرفر");
+    showContactMessage("error", getRequestErrorMessage(err));
   }
 }
 
@@ -896,7 +896,7 @@ async function handleRejectRequest(contactId) {
   }
 
   try {
-    const res = await fetch("/api/contacts/reject", {
+    const res = await fetchWithTimeout("/api/contacts/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contactId })
@@ -905,18 +905,18 @@ async function handleRejectRequest(contactId) {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      alert(data.error || "فشل رفض طلب الصداقة");
+      showContactMessage("error", data.error || "فشل رفض طلب الصداقة");
       return;
     }
 
     // تحديث القائمة
     await loadPendingRequests();
 
-    alert("تم رفض طلب الصداقة");
+    showContactMessage("success", "تم رفض طلب الصداقة");
 
   } catch (err) {
     console.error("Error rejecting request:", err);
-    alert("خطأ في الاتصال بالسيرفر");
+    showContactMessage("error", getRequestErrorMessage(err));
   }
 }
 
