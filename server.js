@@ -17,7 +17,19 @@ let nextPendingId = 1;
 
 const app = express();
 app.disable('x-powered-by');
-app.use(helmet());
+if (process.env.NODE_ENV === "production") {
+  app.use(helmet());
+} else {
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginOpenerPolicy: false,
+      originAgentCluster: false
+    })
+  );
+}
+
+
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -35,20 +47,7 @@ app.use(async (req, res, next) => {
 });
 app.use(express.urlencoded({ extended: true })); 
 app.use(express.static(path.join(__dirname, "public")));
-//ngerngvoenvoinkniujni
 
-
-// ========== إعداد SMTP (الإيميل) ==========
-
-//const transporter = nodemailer.createTransport({
-  //host: process.env.SMTP_HOST,
-  //port: Number(process.env.SMTP_PORT) || 587,
-  //secure: false, 
-  //auth: {
-    //user: process.env.SMTP_USER,
-    //pass: process.env.SMTP_PASS
-  //}
-//});
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -646,7 +645,6 @@ app.post("/api/register", async (req, res) => {
 
 app.post("/api/verify-email", async (req, res) => {
   const { userId, code } = req.body; // userId هنا = pendingId من الذاكرة
-  console.log("VERIFY BODY:", req.body);
   if (!userId || !code) {
     return res.status(400).json({ error: "userId و code مطلوبان" });
   }
@@ -892,7 +890,6 @@ io.on("connection", (socket) => {
 
       const userId = userRes.recordset[0].Id;
 
-      // إدخال الرسالة في Messages (استخدم SCOPE_IDENTITY بدلاً من OUTPUT)
       // إدخال الرسالة في Messages
       request = pool.request();
       const insertRes = await request
