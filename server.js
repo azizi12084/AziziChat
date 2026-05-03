@@ -366,7 +366,7 @@ app.post("/api/contacts/accept", async (req, res) => {
 
   } catch (err) {
     console.error("Error accepting contact:", err);
-    res.status(500).json({ error: "Server error: " + err.message });
+    res.status(500).json({ error: "حدث خطأ في السيرفر. حاول لاحقًا." });
   }
 });
 
@@ -412,7 +412,7 @@ app.post("/api/contacts/reject", async (req, res) => {
 
   } catch (err) {
     console.error("Error rejecting contact:", err);
-    res.status(500).json({ error: "Server error: " + err.message });
+    res.status(500).json({ error: "حدث خطأ في السيرفر. حاول لاحقًا." });
   }
 });
 
@@ -850,7 +850,7 @@ app.post("/api/contacts/request", async (req, res) => {
 
   } catch (err) {
     console.error("Error in /api/contacts/request:", err);
-    res.status(500).json({ error: "خطأ في السيرفر: " + err.message });
+    res.status(500).json({ error: "خطأ في السيرفر: حاول لاحقا" });
   }
 });
 
