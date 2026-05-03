@@ -5,6 +5,12 @@ It allows users to communicate instantly, manage contacts, and store messages se
 
 ---
 
+## 🌐 Live Demo
+
+AziziChat is currently deployed on Render:
+
+https://azizichat.onrender.com
+
 ## 🚀 Features
 
 - User registration and login
@@ -29,20 +35,21 @@ It allows users to communicate instantly, manage contacts, and store messages se
 - Socket.IO
 
 **Database:**
-- Azure SQL Database
+- Neon PostgreSQL
+
+**Email Verification:**
+- Resend API
 
 **Security:**
 - bcrypt
 - Helmet
 - dotenv
 
-**DevOps:**
-- Docker
-- GitHub Actions
-- Azure App Service
+**Deployment:**
+- Render
+- GitHub
 
 ---
-
 
 ## 📸 Screenshots
 
@@ -64,9 +71,9 @@ node server.js
 
 ## 📊 Project Status
 
-The project was deployed on Azure but may not be currently active due to cloud subscription limitations.
+The application is currently live on Render and uses Neon PostgreSQL as the production database.
 
----
+The previous Azure deployment is no longer active because it was used only for development and testing.
 
 ## 💡 What I Learned
 
