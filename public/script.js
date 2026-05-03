@@ -810,6 +810,19 @@ function showContactMessage(type, text) {
   }, 5000);
 }
 
+function showPendingRequestMessage(type, text) {
+  if (!pendingRequestsList) return;
+
+  const msg = document.createElement("p");
+  msg.className = type === "success" ? "contact-message success" : "contact-message error";
+  msg.textContent = text;
+
+  pendingRequestsList.prepend(msg);
+
+  setTimeout(() => {
+    msg.remove();
+  }, 5000);
+}
 // جلب طلبات الصداقة الواردة
 async function loadPendingRequests() {
   if (!currentUser) return;
@@ -873,7 +886,7 @@ async function handleAcceptRequest(contactId) {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showContactMessage("error", data.error || "فشل قبول طلب الصداقة");
+      showPendingRequestMessage("error", data.error || "فشل قبول طلب الصداقة");
       return;
     }
 
@@ -881,11 +894,11 @@ async function handleAcceptRequest(contactId) {
     await loadPendingRequests();
     await loadUsers();
 
-    showContactMessage("success", "تم قبول طلب الصداقة بنجاح");
+    showPendingRequestMessage("success", "تم قبول طلب الصداقة بنجاح");
 
   } catch (err) {
     console.error("Error accepting request:", err);
-    showContactMessage("error", getRequestErrorMessage(err));
+    showPendingRequestMessage("error", getRequestErrorMessage(err));
   }
 }
 
@@ -905,18 +918,18 @@ async function handleRejectRequest(contactId) {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showContactMessage("error", data.error || "فشل رفض طلب الصداقة");
+      showPendingRequestMessage("error", data.error || "فشل رفض طلب الصداقة");
       return;
     }
 
     // تحديث القائمة
     await loadPendingRequests();
 
-    showContactMessage("success", "تم رفض طلب الصداقة");
+    showPendingRequestMessage("success", "تم رفض طلب الصداقة");
 
   } catch (err) {
     console.error("Error rejecting request:", err);
-    showContactMessage("error", getRequestErrorMessage(err));
+    showPendingRequestMessage("error", getRequestErrorMessage(err));
   }
 }
 
