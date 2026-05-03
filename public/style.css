@@ -731,4 +731,54 @@ select,input[type="text"],input[type="email"],input[type="password"],textarea{fl
 }
 
 
+/* ===== Desktop chat container refinement ===== */
+@media (min-width: 901px) {
+  #chatSection {
+    min-height: 100vh;
+    padding: 24px;
+    background: #ece5dd;
+  }
 
+  .chat-layout {
+    width: min(1280px, 100%);
+    height: calc(100vh - 48px);
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+    gap: 0;
+  }
+
+  .contacts-section {
+    height: 100%;
+    width: 340px;
+    max-width: 340px;
+    border-radius: 0;
+    border-left: 1px solid rgba(15, 23, 42, 0.08);
+    margin-bottom: 0;
+  }
+
+  .main {
+    height: 100%;
+    min-width: 0;
+    background: #f8fafc;
+  }
+
+  .chat-header {
+    min-height: 72px;
+    background: #ffffff;
+  }
+
+  .messages {
+    flex: 1;
+    height: auto;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .input-bar {
+    min-height: 76px;
+    background: #ffffff;
+  }
+}
