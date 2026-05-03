@@ -62,37 +62,42 @@ function normalizeRow(row) {
 
 function convertSqlServerToPostgres(query, params) {
   let text = query;
+  let returningClause = "";
 
+  // SQL Server functions/syntax to PostgreSQL
   text = text.replace(/SELECT\s+TOP\s+1/gi, "SELECT");
   text = text.replace(/SYSDATETIME\(\)/gi, "NOW()");
   text = text.replace(/GETDATE\(\)/gi, "NOW()");
-  text = text.replace(/,\s*1\s*\)\s*RETURNING/gi, ", true) RETURNING");
+
   // Convert SQL Server bit comparisons to PostgreSQL boolean comparisons
-text = text.replace(/\bIsPrivate\s*=\s*1\b/gi, "IsPrivate = true");
-text = text.replace(/\bIsPrivate\s*=\s*0\b/gi, "IsPrivate = false");
+  text = text.replace(/\bIsPrivate\s*=\s*1\b/gi, "IsPrivate = true");
+  text = text.replace(/\bIsPrivate\s*=\s*0\b/gi, "IsPrivate = false");
 
-text = text.replace(/\bIsRead\s*=\s*1\b/gi, "IsRead = true");
-text = text.replace(/\bIsRead\s*=\s*0\b/gi, "IsRead = false");
+  text = text.replace(/\bIsRead\s*=\s*1\b/gi, "IsRead = true");
+  text = text.replace(/\bIsRead\s*=\s*0\b/gi, "IsRead = false");
 
-text = text.replace(/\bIsDeleted\s*=\s*1\b/gi, "IsDeleted = true");
-text = text.replace(/\bIsDeleted\s*=\s*0\b/gi, "IsDeleted = false");
+  text = text.replace(/\bIsDeleted\s*=\s*1\b/gi, "IsDeleted = true");
+  text = text.replace(/\bIsDeleted\s*=\s*0\b/gi, "IsDeleted = false");
 
-text = text.replace(/\bIsEmailVerified\s*=\s*1\b/gi, "IsEmailVerified = true");
-text = text.replace(/\bIsEmailVerified\s*=\s*0\b/gi, "IsEmailVerified = false");
+  text = text.replace(/\bIsEmailVerified\s*=\s*1\b/gi, "IsEmailVerified = true");
+  text = text.replace(/\bIsEmailVerified\s*=\s*0\b/gi, "IsEmailVerified = false");
 
-text = text.replace(/\bIsActive\s*=\s*1\b/gi, "IsActive = true");
-text = text.replace(/\bIsActive\s*=\s*0\b/gi, "IsActive = false");
-  let returningClause = "";
+  text = text.replace(/\bIsActive\s*=\s*1\b/gi, "IsActive = true");
+  text = text.replace(/\bIsActive\s*=\s*0\b/gi, "IsActive = false");
 
-    text = text.replace(/OUTPUT\s+Inserted\.Id,\s*Inserted\.Username,\s*Inserted\.Email,\s*Inserted\.IsEmailVerified/gi, () => {
-    returningClause = " RETURNING Id, Username, Email, IsEmailVerified";
-    return "";
-    });
+  // Convert OUTPUT Inserted... to RETURNING
+  text = text.replace(
+    /OUTPUT\s+Inserted\.Id,\s*Inserted\.Username,\s*Inserted\.Email,\s*Inserted\.IsEmailVerified/gi,
+    () => {
+      returningClause = " RETURNING Id, Username, Email, IsEmailVerified";
+      return "";
+    }
+  );
 
-    text = text.replace(/OUTPUT\s+Inserted\.Id/gi, () => {
+  text = text.replace(/OUTPUT\s+Inserted\.Id/gi, () => {
     returningClause = " RETURNING Id";
     return "";
-    });
+  });
 
   const values = [];
   let index = 1;
@@ -104,32 +109,33 @@ text = text.replace(/\bIsActive\s*=\s*0\b/gi, "IsActive = false");
     index++;
   }
 
-    if (
+  if (
     /^\s*SELECT/i.test(text) &&
     /TOP\s+1/i.test(query) &&
     !/LIMIT\s+1/i.test(text)
-    ) {
+  ) {
     text += " LIMIT 1";
-    }
-  if (returningClause && !/RETURNING/i.test(text)) {
-     text += returningClause;
   }
-  // Convert SQL Server bit value 1 to PostgreSQL boolean true
-  // for IsEmailVerified insert
+
+  if (returningClause && !/RETURNING/i.test(text)) {
+    text += returningClause;
+  }
+
+  // Convert SQL Server bit insert values to PostgreSQL boolean values
   text = text.replace(
     /(INSERT\s+INTO\s+Users\s*\([^)]*IsEmailVerified[^)]*\)\s*VALUES\s*\([^)]*),\s*1\s*\)(\s*RETURNING)/i,
     "$1, true)$2"
   );
-  // Convert SQL Server bit insert values to PostgreSQL boolean values
-text = text.replace(
-  /(INSERT\s+INTO\s+Rooms\s*\([^)]*IsPrivate[^)]*\)\s*VALUES\s*\([^)]*),\s*1\s*\)/i,
-  "$1, true)"
-);
 
-text = text.replace(
-  /(INSERT\s+INTO\s+Rooms\s*\([^)]*IsPrivate[^)]*\)\s*VALUES\s*\([^)]*),\s*0\s*\)/i,
-  "$1, false)"
-);
+  text = text.replace(
+    /(INSERT\s+INTO\s+Rooms\s*\([^)]*IsPrivate[^)]*\)\s*VALUES\s*\([^)]*),\s*1\s*\)/i,
+    "$1, true)"
+  );
+
+  text = text.replace(
+    /(INSERT\s+INTO\s+Rooms\s*\([^)]*IsPrivate[^)]*\)\s*VALUES\s*\([^)]*),\s*0\s*\)/i,
+    "$1, false)"
+  );
 
   return { text, values };
 }

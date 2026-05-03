@@ -7,7 +7,7 @@ const helmet = require("helmet");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-const { sql, pool, poolConnect } = require("./db_postgres_compat");console.log("POOL TEST:", pool);
+const { sql, pool, poolConnect } = require("./db_postgres_compat");
 
 const { Resend } = require("resend");
 const nodemailer = require("nodemailer");

@@ -204,13 +204,11 @@ if (btnBackToRegister) {
 
 /* ================== جلب المستخدمين (قائمة الشركاء) ================== */
 
-// loadUsers() implementation replaced below to render sidebar contacts
-
 async function loadUsers() {
   if (!currentUser) return;
 
   try {
-    const res = await fetch(`/api/contacts/${encodeURIComponent(currentUser)}`);
+    const res = await fetchWithTimeout(`/api/contacts/${encodeURIComponent(currentUser)}`);
     const data = await res.json();
 
     if (!contactsList) return;
@@ -373,7 +371,7 @@ window.addEventListener('popstate', (e) => {
 
 async function loadHistory(user1, user2) {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `/api/messages?user1=${encodeURIComponent(user1)}&user2=${encodeURIComponent(user2)}`
     );
     const data = await res.json();
@@ -662,7 +660,8 @@ if (btnResendCode) {
 
     } catch (err) {
       console.error("Error in resend code:", err);
-      showAuthMessage("error", getRequestErrorMessage(err));    } finally {
+      showAuthMessage("error", getRequestErrorMessage(err));    
+    } finally {
       btnResendCode.disabled = false;
     }
   });
@@ -830,7 +829,7 @@ async function loadPendingRequests() {
   try {
     pendingRequestsList.innerHTML = '<p class="loading-text">جاري التحميل...</p>';
 
-    const res = await fetch(`/api/contacts/requests/${encodeURIComponent(currentUser)}`);
+    const res = await fetchWithTimeout(`/api/contacts/requests/${encodeURIComponent(currentUser)}`);
     const data = await res.json();
 
     if (!res.ok) {

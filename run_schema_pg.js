@@ -6,8 +6,14 @@ const fs = require("fs");
 const { pool } = require("./db_pg");
 
 async function runSchema() {
+  if (process.env.ALLOW_SCHEMA_RESET !== "true") {
+    console.error("❌ Schema reset blocked.");
+    console.error("Set ALLOW_SCHEMA_RESET=true only when you intentionally want to recreate all tables.");
+    process.exit(1);
+  }
+
   try {
-    console.log("Dropping old tables...");
+    console.log("⚠️ Dropping old tables...");
 
     await pool.query(`
       DROP TABLE IF EXISTS Messages CASCADE;
