@@ -619,7 +619,13 @@ app.post("/api/register", async (req, res) => {
       console.log("Verification email sent to:", cleanEmail);
     } catch (emailErr) {
       console.error("Error sending verification email:", emailErr);
-        }
+      pendingUsers.delete(pendingId);
+      return res.status(500).json({
+        error: "فشل إرسال كود التفعيل. حاول مرة أخرى لاحقًا."
+      });
+
+
+      }
 
     return res.json({
       success: true,
