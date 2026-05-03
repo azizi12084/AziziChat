@@ -12,3 +12,6 @@ yarn-error.log*
 # build
 dist/
 build/
+
+delete_user_pg.js
+

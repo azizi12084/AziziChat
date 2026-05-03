@@ -1,3 +1,5 @@
+"use strict";
+
 const socket = io();
 
 const loginSection = document.getElementById("loginSection");
@@ -85,6 +87,30 @@ function clearAuthMessage() {
   authAlertBox.style.display = "none";
   authAlertBox.textContent = "";
   authAlertBox.className = "auth-alert";
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function getRequestErrorMessage(err) {
+  if (err.name === "AbortError") {
+    return "الطلب استغرق وقتًا طويلًا. تحقق من الاتصال وحاول مرة أخرى.";
+  }
+
+  return "خطأ في الاتصال بالسيرفر. حاول مرة أخرى.";
 }
 
 /* ================== عدّاد إعادة الإرسال ================== */
@@ -343,8 +369,6 @@ window.addEventListener('popstate', (e) => {
     }
   }
 });
-
-
 /* ================== الرسائل / المحادثة ================== */
 
 async function loadHistory(user1, user2) {
@@ -407,7 +431,7 @@ btnLogin.addEventListener("click", async () => {
     btnLogin.disabled = true; // 🔒 تعطيل زر تسجيل الدخول مؤقتًا
     btnLogin.textContent = "الرجاء الانتظار...";
 
-    const res = await fetch("/api/login", {
+    const res = await fetchWithTimeout("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ login, password })
@@ -434,7 +458,7 @@ btnLogin.addEventListener("click", async () => {
     clearAuthMessage();
   } catch (err) {
     console.error("Error in login:", err);
-    showAuthMessage("error", "خطأ في الاتصال بالسيرفر أثناء تسجيل الدخول");
+    showAuthMessage("error", getRequestErrorMessage(err));
   } finally {
     btnLogin.disabled = false;    // 🔓 إعادة تفعيل الزر
     btnLogin.textContent = "تسجيل الدخول";
@@ -465,8 +489,9 @@ btnRegister.addEventListener("click", async () => {
 
   try {
     btnRegister.disabled = true;
+    btnRegister.textContent = "جاري إنشاء الحساب...";
 
-    const res = await fetch("/api/register", {
+    const res = await fetchWithTimeout("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password })
@@ -502,9 +527,10 @@ btnRegister.addEventListener("click", async () => {
 
   } catch (err) {
     console.error("Error in register:", err);
-    showAuthMessage("error", "خطأ في الاتصال بالسيرفر أثناء التسجيل");
+    showAuthMessage("error", getRequestErrorMessage(err));
   } finally {
     btnRegister.disabled = false;
+    btnRegister.textContent = "إنشاء حساب";
   }
 });
 
@@ -529,7 +555,7 @@ btnVerifyCode.addEventListener("click", async () => {
     btnVerifyCode.disabled = true;
     btnVerifyCode.textContent = "جاري التفعيل...";
 
-    const res = await fetch("/api/verify-email", {
+    const res = await fetchWithTimeout("/api/verify-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -581,7 +607,7 @@ btnVerifyCode.addEventListener("click", async () => {
     clearAuthMessage();
   } catch (err) {
     console.error("Error in verify email:", err);
-    showAuthMessage("error", "خطأ في الاتصال بالسيرفر أثناء تفعيل البريد");
+    showAuthMessage("error", getRequestErrorMessage(err));
   } finally {
     btnVerifyCode.disabled = false;
     btnVerifyCode.textContent = "تفعيل البريد الإلكتروني والدخول";
@@ -611,7 +637,7 @@ if (btnResendCode) {
     try {
       btnResendCode.disabled = true;
 
-      const res = await fetch("/api/register", {
+      const res = await fetchWithTimeout("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password })
@@ -636,8 +662,7 @@ if (btnResendCode) {
 
     } catch (err) {
       console.error("Error in resend code:", err);
-      showAuthMessage("error", "خطأ في الاتصال بالسيرفر أثناء إعادة إرسال الكود");
-    } finally {
+      showAuthMessage("error", getRequestErrorMessage(err));    } finally {
       btnResendCode.disabled = false;
     }
   });
@@ -732,7 +757,7 @@ if (btnSendContactRequest) {
       btnSendContactRequest.disabled = true;
       btnSendContactRequest.textContent = "جاري الإرسال...";
 
-      const res = await fetch("/api/contacts/request", {
+      const res = await fetchWithTimeout("/api/contacts/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -763,7 +788,7 @@ if (btnSendContactRequest) {
 
     } catch (err) {
       console.error("Error sending contact request:", err);
-      showContactMessage("error", "خطأ في الاتصال بالسيرفر");
+      showContactMessage("error", getRequestErrorMessage(err));
     } finally {
       btnSendContactRequest.disabled = false;
       btnSendContactRequest.textContent = "إرسال طلب صداقة";
@@ -900,23 +925,6 @@ async function handleRejectRequest(contactId) {
 clearAuthMessage();
 loadUsers();
 
-/* ---------------------------------------------------------------------------
-  Mobile viewport & keyboard handling (VisualViewport)
-
-  Goals:
-  - Keep `#chatHeader` fixed at top of screen (so it doesn't move with keyboard).
-  - Keep `#chatForm` (input bar) immediately above the virtual keyboard.
-  - Make `#messages` fill the area between header and input, with no extra
-    white space when keyboard opens on iOS or Android.
-  - Scroll messages to bottom when input focuses.
-
-  Strategy:
-  - Use `window.visualViewport` when available to measure the layout viewport
-    height and estimate keyboard height (window.innerHeight - visualViewport.height).
-  - Write CSS variables `--vh` (1% of visible height) and `--keyboard-height`
-    which are used by the mobile CSS rules in `style.css`.
-  - Debounce updates and respond to focus/blur events on the input.
---------------------------------------------------------------------------- */
 (function(){
   const root = document.documentElement;
   const messagesEl = document.getElementById('messages');
