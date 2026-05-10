@@ -10,6 +10,7 @@ const path = require("path");
 const { sql, pool, poolConnect } = require("./db_postgres_compat");
 const usersDb = require("./db/users");
 const contactsDb = require("./db/contacts");
+const roomsDb = require("./db/rooms");
 const { Resend } = require("resend");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -130,60 +131,38 @@ function normalizePair(u1, u2) {
 async function getOrCreatePrivateRoom(user1, user2) {
   const [nameA, nameB] = normalizePair(user1, user2);
 
-  // جلب Id للمستخدمين
-  let request = pool.request();
-  const usersRes = await request
-    .input("U1", sql.NVarChar(50), nameA)
-    .input("U2", sql.NVarChar(50), nameB)
-    .query(`
-      SELECT Id, Username
-      FROM Users
-      WHERE Username = @U1 OR Username = @U2
-    `);
+  const userA = await usersDb.findUserByUsername(nameA);
+  const userB = await usersDb.findUserByUsername(nameB);
 
-  if (usersRes.recordset.length !== 2) {
+  if (!userA || !userB) {
     throw new Error("One of the users not found in Users table");
   }
 
-  let idA, idB;
-  for (const row of usersRes.recordset) {
-    if (row.Username === nameA) idA = row.Id;
-    else idB = row.Id;
+  const existingRoom = await roomsDb.findPrivateRoomBetweenUsers(userA.Id, userB.Id);
+
+  if (existingRoom) {
+    return {
+      roomId: existingRoom.Id,
+      idA: userA.Id,
+      idB: userB.Id,
+      nameA,
+      nameB
+    };
   }
 
-  // البحث عن غرفة موجودة مسبقًا
-  request = pool.request();
-  let roomRes = await request
-    .input("IdA", sql.Int, idA)
-    .input("IdB", sql.Int, idB)
-    .query(`
-      SELECT TOP 1 Id FROM Rooms
-      WHERE IsPrivate = 1
-        AND (
-          (User1Id = @IdA AND User2Id = @IdB)
-          OR
-          (User1Id = @IdB AND User2Id = @IdA)
-        )
-    `);
+  const newRoom = await roomsDb.createPrivateRoom(
+    `${nameA} - ${nameB}`,
+    userA.Id,
+    userB.Id
+  );
 
-  if (roomRes.recordset.length > 0) {
-    return { roomId: roomRes.recordset[0].Id, idA, idB, nameA, nameB };
-  }
-
-  // إنشاء غرفة جديدة
-  request = pool.request();
-  const insertRes = await request
-    .input("Name", sql.NVarChar(100), `${nameA} - ${nameB}`)
-    .input("IdA", sql.Int, idA)
-    .input("IdB", sql.Int, idB)
-    .query(`
-      INSERT INTO Rooms (Name, IsPrivate, User1Id, User2Id)
-      OUTPUT Inserted.Id
-      VALUES (@Name, true, @IdA, @IdB)
-    `);
-
-  const roomId = insertRes.recordset[0].Id;
-  return { roomId, idA, idB, nameA, nameB };
+  return {
+    roomId: newRoom.Id,
+    idA: userA.Id,
+    idB: userB.Id,
+    nameA,
+    nameB
+  };
 }
 // التحقق من صحة الإيميل بصيغة بسيطة
 function isValidEmail(email) {
