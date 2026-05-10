@@ -672,19 +672,11 @@ app.post("/api/verify-email", async (req, res) => {
       return res.status(400).json({ error: "انتهت صلاحية هذا الكود، قم بإعادة التسجيل من جديد." });
     }
 
-    // 1) إنشاء المستخدم الحقيقي في جدول Users مع IsEmailVerified = 1
-    let request = pool.request();
-    const insertUser = await request
-      .input("Username", sql.NVarChar(50), pending.username)
-      .input("Email", sql.NVarChar(100), pending.email)
-      .input("PasswordHash", sql.NVarChar(255), pending.passwordHash)
-      .query(`
-        INSERT INTO Users (Username, Email, PasswordHash, IsEmailVerified)
-        OUTPUT Inserted.Id, Inserted.Username, Inserted.Email, Inserted.IsEmailVerified
-        VALUES (@Username, @Email, @PasswordHash, 1)
-      `);
-
-    const user = insertUser.recordset[0];
+    const user = await usersDb.createVerifiedUser(
+      pending.username,
+      pending.email,
+      pending.passwordHash
+    );
 
     // 2) حذف الطلب من الذاكرة
     pendingUsers.delete(pendingId);
