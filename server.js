@@ -485,20 +485,9 @@ app.post("/api/register", async (req, res) => {
       return res.status(400).json({ error: "صيغة البريد الإلكتروني غير صالحة" });
     }
 
-    // 3) التأكد من عدم وجود مستخدم نهائي بنفس الاسم أو الإيميل في جدول Users
-    let request = pool.request();
-    const existingFinal = await request
-      .input("Username", sql.NVarChar(50), cleanUsername)
-      .input("Email", sql.NVarChar(100), cleanEmail)
-      .query(`
-        SELECT TOP 1 Id, Username, Email
-        FROM Users
-        WHERE Username = @Username OR Email = @Email
-      `);
+    const found = await usersDb.findUserByUsernameOrEmail(cleanUsername, cleanEmail);
 
-    if (existingFinal.recordset.length > 0) {
-      const found = existingFinal.recordset[0];
-
+    if (found) {
       if (found.Username === cleanUsername) {
         return res.status(409).json({ error: "اسم المستخدم مستخدم بالفعل" });
       }
