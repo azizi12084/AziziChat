@@ -682,32 +682,14 @@ io.on("connection", (socket) => {
       const { roomId } = await getOrCreatePrivateRoom(from, to);
 
       // جلب Id للمُرسل
-      let request = pool.request();
-      const userRes = await request
-        .input("Username", sql.NVarChar(50), from)
-        .query("SELECT Id FROM Users WHERE Username = @Username");
+      const sender = await usersDb.findUserByUsername(from);
 
-      if (userRes.recordset.length === 0) {
+      if (!sender) {
         console.error("Sender user not found in DB");
         return;
       }
 
-      const userId = userRes.recordset[0].Id;
-
-      // إدخال الرسالة في Messages
-      request = pool.request();
-      const insertRes = await request
-        .input("RoomId", sql.Int, roomId)
-        .input("UserId", sql.Int, userId)
-        .input("Content", sql.NVarChar(sql.MAX), text)
-        .query(`
-          INSERT INTO Messages (RoomId, UserId, Content)
-          VALUES (@RoomId, @UserId, @Content)
-          RETURNING Id, CreatedAt
-        `);
-
-      const inserted = insertRes.recordset && insertRes.recordset[0];
-
+      const inserted = await messagesDb.createMessage(roomId, sender.Id, text);
       const msgToSend = {
         from,
         to,
