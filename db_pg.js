@@ -10,6 +10,9 @@ const pool = new Pool({
   connectionTimeoutMillis: 30000,
   keepAlive: true
 });
+pool.on("error", (err) => {
+  console.error("⚠️ Unexpected PostgreSQL pool error:", err.message);
+});
 console.log("Trying PostgreSQL connection...");
 
 const poolConnect = pool.connect()
