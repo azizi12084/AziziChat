@@ -32,6 +32,27 @@ async function getAcceptedContactsByUsername(username) {
   return result.rows.map(mapContact);
 }
 
+async function getPendingRequestsByUsername(username) {
+  const result = await pool.query(
+    `
+    SELECT
+      c.id AS contactid,
+      u.username AS fromuser
+    FROM contacts c
+    JOIN users u
+      ON u.id = c.userid
+    JOIN users receiver
+      ON receiver.id = c.contactuserid
+    WHERE receiver.username = $1
+      AND c.status = 'pending'
+    ORDER BY c.createdat DESC
+    `,
+    [username]
+  );
+
+  return result.rows.map(mapContact);
+}
 module.exports = {
-  getAcceptedContactsByUsername
+  getAcceptedContactsByUsername,
+  getPendingRequestsByUsername
 };

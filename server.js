@@ -384,34 +384,8 @@ app.get("/api/contacts/requests/:username", async (req, res) => {
   }
 
   try {
-    // 1) جلب Id المستخدم
-    let request = pool.request();
-    const userRes = await request
-      .input("Username", sql.NVarChar(50), username)
-      .query("SELECT Id FROM Users WHERE Username = @Username");
-
-    if (userRes.recordset.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userId = userRes.recordset[0].Id;
-
-    // 2) جلب الطلبات الواردة pending
-    request = pool.request();
-    const pendingRes = await request
-      .input("UserId", sql.Int, userId)
-      .query(`
-        SELECT 
-          c.Id AS ContactId,
-          u.Username AS FromUser
-        FROM Contacts c
-        JOIN Users u ON u.Id = c.UserId
-        WHERE c.ContactUserId = @UserId
-          AND c.Status = 'pending'
-      `);
-
-    res.json(pendingRes.recordset);
-
+    const requests = await contactsDb.getPendingRequestsByUsername(username);
+    res.json(requests);
   } catch (err) {
     console.error("Error loading pending requests:", err);
     res.status(500).json({ error: "DB error" });
