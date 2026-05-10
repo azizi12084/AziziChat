@@ -89,7 +89,7 @@ function clearAuthMessage() {
   authAlertBox.className = "auth-alert";
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 

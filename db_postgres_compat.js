@@ -1,13 +1,13 @@
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+
 const { Pool } = require("pg");
 
 const pgPool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  max: 5,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 15000,
+  max: 2,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 8000,
   keepAlive: true
 });
 
@@ -140,6 +140,43 @@ function convertSqlServerToPostgres(query, params) {
   return { text, values };
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientDbError(err) {
+  const message = String(err && err.message ? err.message : "").toLowerCase();
+
+  return (
+    message.includes("connection terminated") ||
+    message.includes("timeout exceeded") ||
+    message.includes("connection timeout") ||
+    message.includes("terminating connection") ||
+    message.includes("connection reset")
+  );
+}
+
+async function queryWithRetry(text, values, retries = 2) {
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await pgPool.query(text, values);
+    } catch (err) {
+      lastError = err;
+
+      if (!isTransientDbError(err) || attempt === retries) {
+        throw err;
+      }
+
+      console.warn(`⚠️ PostgreSQL query failed. Retrying... (${attempt + 1}/${retries})`);
+      await sleep(500 * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+}
+
 class Request {
   constructor() {
     this.params = {};
@@ -152,7 +189,7 @@ class Request {
 
   async query(queryText) {
     const { text, values } = convertSqlServerToPostgres(queryText, this.params);
-    const result = await pgPool.query(text, values);
+    const result = await queryWithRetry(text, values);
 
     return {
       recordset: result.rows.map(normalizeRow),
@@ -169,15 +206,38 @@ const pool = {
 
 console.log("Trying PostgreSQL connection...");
 
-const poolConnect = pgPool.connect()
-  .then((client) => {
-    console.log("✅ Connected to PostgreSQL");
-    client.release();
-  })
-  .catch((err) => {
-    console.error("❌ PostgreSQL connection failed:", err);
-    throw err;
-  });
+async function connectWithRetry(retries = 3) {
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    let client;
+
+    try {
+      client = await pgPool.connect();
+      console.log("✅ Connected to PostgreSQL");
+      client.release();
+      return;
+    } catch (err) {
+      lastError = err;
+
+      if (client) {
+        client.release();
+      }
+
+      if (!isTransientDbError(err) || attempt === retries) {
+        console.error("❌ PostgreSQL connection failed:", err);
+        throw err;
+      }
+
+      console.warn(`⚠ PostgreSQL connection failed. Retrying... (${attempt + 1}/${retries})`);
+      await sleep(1000 * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+}
+
+const poolConnect = connectWithRetry();
 
 module.exports = {
   sql,
