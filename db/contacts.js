@@ -75,9 +75,52 @@ async function deleteContactById(contactId) {
     [contactId]
   );
 }
+
+async function acceptContactById(contactId) {
+  await pool.query(
+    `
+    UPDATE contacts
+    SET status = 'accepted',
+        updatedat = NOW()
+    WHERE id = $1
+    `,
+    [contactId]
+  );
+}
+
+async function findContactBetweenUsers(userA, userB) {
+  const result = await pool.query(
+    `
+    SELECT id, userid, contactuserid, status
+    FROM contacts
+    WHERE userid = $1
+      AND contactuserid = $2
+    `,
+    [userA, userB]
+  );
+
+  return mapContact(result.rows[0]);
+}
+
+async function createAcceptedContact(userA, userB) {
+  await pool.query(
+    `
+    INSERT INTO contacts (userid, contactuserid, status, updatedat)
+    VALUES ($1, $2, 'accepted', NOW())
+    ON CONFLICT (userid, contactuserid)
+    DO UPDATE SET status = 'accepted',
+                  updatedat = NOW()
+    `,
+    [userA, userB]
+  );
+}
+
 module.exports = {
   getAcceptedContactsByUsername,
   findContactById,
   deleteContactById,
-  getPendingRequestsByUsername
+  getPendingRequestsByUsername,
+  acceptContactById,
+  findContactBetweenUsers,
+  createAcceptedContact
 };

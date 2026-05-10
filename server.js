@@ -267,21 +267,11 @@ app.post("/api/contacts/accept", async (req, res) => {
   }
 
   try {
-    // 1) جلب الطلب الحالي
-    let request = pool.request();
-    const contactRes = await request
-      .input("Id", sql.Int, contactId)
-      .query(`
-        SELECT UserId, ContactUserId, Status
-        FROM Contacts
-        WHERE Id = @Id
-      `);
+    const contact = await contactsDb.findContactById(contactId);
 
-    if (contactRes.recordset.length === 0) {
+    if (!contact) {
       return res.status(404).json({ error: "Contact request not found" });
     }
-
-    const contact = contactRes.recordset[0];
 
     if (contact.Status !== "pending") {
       return res.json({ message: "Request already processed" });
@@ -290,35 +280,12 @@ app.post("/api/contacts/accept", async (req, res) => {
     const userA = contact.UserId;
     const userB = contact.ContactUserId;
 
-    // 2) تحديث الطلب الحالي إلى accepted
-    request = pool.request();
-    await request
-      .input("Id", sql.Int, contactId)
-      .query(`
-        UPDATE Contacts
-        SET Status = 'accepted'
-        WHERE Id = @Id
-      `);
+    await contactsDb.acceptContactById(contactId);
 
-    // 3) التأكد من وجود السطر العكسي
-    request = pool.request();
-    const reverseCheck = await request
-      .input("A", sql.Int, userB)
-      .input("B", sql.Int, userA)
-      .query(`
-        SELECT Id FROM Contacts
-        WHERE UserId = @A AND ContactUserId = @B
-      `);
+    const reverseContact = await contactsDb.findContactBetweenUsers(userB, userA);
 
-    if (reverseCheck.recordset.length === 0) {
-      request = pool.request();
-      await request
-        .input("A", sql.Int, userB)
-        .input("B", sql.Int, userA)
-        .query(`
-          INSERT INTO Contacts (UserId, ContactUserId, Status)
-          VALUES (@A, @B, 'accepted')
-        `);
+    if (!reverseContact) {
+      await contactsDb.createAcceptedContact(userB, userA);
     }
 
     res.json({ success: true, message: "Contact request accepted" });
