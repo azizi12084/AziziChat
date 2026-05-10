@@ -224,28 +224,17 @@ app.post("/api/users", async (req, res) => {
 
   try {
     const cleanName = username.trim();
+    const existing = await usersDb.findUserByUsername(cleanName);
 
-    let request = pool.request();
-    let existing = await request
-      .input("Username", sql.NVarChar(50), cleanName)
-      .query("SELECT Id FROM Users WHERE Username = @Username");
-
-    if (existing.recordset.length > 0) {
+    if (existing) {
       return res.status(409).json({ error: "Kullanıcı zaten var" });
     }
 
-    request = pool.request();
-    const insertUser = await request
-      .input("Username", sql.NVarChar(50), cleanName)
-      .input("PasswordHash", sql.NVarChar(255), "dummy")
-      .query(`
-        INSERT INTO Users (Username, PasswordHash)
-        OUTPUT Inserted.Id, Inserted.Username
-        VALUES (@Username, @PasswordHash)
-      `);
+    const user = await usersDb.createBasicUser(cleanName, "dummy");
 
-    res.json({ success: true, user: insertUser.recordset[0] });
-  } catch (err) {
+    res.json({ success: true, user });
+
+      } catch (err) {
     console.error("Error while creating user:", err);
     res.status(500).json({ error: "DB error" });
   }
