@@ -11,6 +11,7 @@ const { sql, pool, poolConnect } = require("./db_postgres_compat");
 const usersDb = require("./db/users");
 const contactsDb = require("./db/contacts");
 const roomsDb = require("./db/rooms");
+const messagesDb = require("./db/messages");
 const { Resend } = require("resend");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -586,19 +587,9 @@ app.get("/api/messages", async (req, res) => {
 
   try {
     const { roomId } = await getOrCreatePrivateRoom(user1, user2);
-
-    let request = pool.request();
-    const result = await request
-      .input("RoomId", sql.Int, roomId)
-      .query(`
-        SELECT m.Id, m.Content, m.CreatedAt, u.Username
-        FROM Messages m
-        JOIN Users u ON m.UserId = u.Id
-        WHERE m.RoomId = @RoomId
-        ORDER BY m.CreatedAt ASC
-      `);
-
-    res.json(result.recordset);
+    const messages = await messagesDb.getMessagesByRoomId(roomId);
+    res.json(messages);
+    
   } catch (err) {
     console.error("Error while fetching messages:", err);
     res.status(500).json({ error: "DB error" });
