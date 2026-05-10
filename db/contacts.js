@@ -115,6 +115,34 @@ async function createAcceptedContact(userA, userB) {
   );
 }
 
+async function findContactRelationship(userA, userB) {
+  const result = await pool.query(
+    `
+    SELECT id, userid, contactuserid, status
+    FROM contacts
+    WHERE (userid = $1 AND contactuserid = $2)
+       OR (userid = $2 AND contactuserid = $1)
+    LIMIT 1
+    `,
+    [userA, userB]
+  );
+
+  return mapContact(result.rows[0]);
+}
+
+async function createPendingContactRequest(senderId, receiverId) {
+  await pool.query(
+    `
+    INSERT INTO contacts (userid, contactuserid, status, updatedat)
+    VALUES ($1, $2, 'pending', NOW())
+    ON CONFLICT (userid, contactuserid)
+    DO UPDATE SET status = 'pending',
+                  updatedat = NOW()
+    `,
+    [senderId, receiverId]
+  );
+}
+
 module.exports = {
   getAcceptedContactsByUsername,
   findContactById,
@@ -122,5 +150,7 @@ module.exports = {
   getPendingRequestsByUsername,
   acceptContactById,
   findContactBetweenUsers,
-  createAcceptedContact
+  createAcceptedContact,
+  findContactRelationship,
+  createPendingContactRequest
 };

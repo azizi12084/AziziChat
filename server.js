@@ -638,66 +638,45 @@ app.post("/api/contacts/request", async (req, res) => {
   }
 
   try {
-    // جلب Id المستخدم المرسل
-    let request = pool.request();
-    const senderResult = await request
-      .input("senderUsername", sql.NVarChar(50), senderUsername.trim())
-      .query("SELECT Id FROM Users WHERE Username = @senderUsername");
+    const sender = await usersDb.findUserByUsername(senderUsername.trim());
 
-    if (senderResult.recordset.length === 0) {
+    if (!sender) {
       return res.status(404).json({ error: "المستخدم المرسل غير موجود" });
     }
 
-    const senderId = senderResult.recordset[0].Id;
-
-    // جلب المستخدم المستقبل
     const trimmedUsername = username.trim();
-    request = pool.request();
-    const userResult = await request
-      .input("username", sql.NVarChar(50), trimmedUsername)
-      .query("SELECT Id FROM Users WHERE Username = @username");
+    const receiver = await usersDb.findUserByUsername(trimmedUsername);
 
-    if (userResult.recordset.length === 0) {
+    if (!receiver) {
       console.log(`User not found: "${trimmedUsername}"`);
       return res.status(404).json({ error: "المستخدم غير موجود" });
     }
 
-    const receiverId = userResult.recordset[0].Id;
+    const senderId = sender.Id;
+    const receiverId = receiver.Id;
 
-    // منع إرسال طلب لنفسك
     if (senderId === receiverId) {
       return res.status(400).json({ error: "لا يمكنك إضافة نفسك" });
     }
 
-    // التحقق من وجود علاقة موجودة (مقبولة أو قيد الانتظار)
-    request = pool.request();
-    const check = await request
-      .input("u1", sql.Int, senderId)
-      .input("u2", sql.Int, receiverId)
-      .query(`
-        SELECT Status FROM Contacts
-        WHERE (UserId = @u1 AND ContactUserId = @u2)
-           OR (UserId = @u2 AND ContactUserId = @u1)
-      `);
+    const existingRelationship = await contactsDb.findContactRelationship(
+      senderId,
+      receiverId
+    );
 
-    if (check.recordset.length > 0) {
-      const status = check.recordset[0].Status;
-      if (status === 'accepted') {
+    if (existingRelationship) {
+      const status = existingRelationship.Status;
+
+      if (status === "accepted") {
         return res.status(409).json({ error: "هذا المستخدم موجود بالفعل ضمن جهات اتصالك" });
-      } else if (status === 'pending') {
+      }
+
+      if (status === "pending") {
         return res.status(409).json({ error: "تم إرسال طلب صداقة لهذا المستخدم مسبقاً وهو قيد الانتظار" });
       }
     }
 
-    // إدخال الطلب
-    request = pool.request();
-    await request
-      .input("u1", sql.Int, senderId)
-      .input("u2", sql.Int, receiverId)
-      .query(`
-        INSERT INTO Contacts (UserId, ContactUserId, Status)
-        VALUES (@u1, @u2, 'pending')
-      `);
+    await contactsDb.createPendingContactRequest(senderId, receiverId);
 
     res.json({ success: true, message: "تم إرسال طلب الصداقة بنجاح" });
 
