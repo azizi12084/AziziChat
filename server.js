@@ -9,6 +9,7 @@ const { Server } = require("socket.io");
 const path = require("path");
 const { sql, pool, poolConnect } = require("./db_postgres_compat");
 const usersDb = require("./db/users");
+const contactsDb = require("./db/contacts");
 const { Resend } = require("resend");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -249,34 +250,8 @@ app.get("/api/contacts/:username", async (req, res) => {
   }
 
   try {
-    // 1) جلب Id المستخدم
-    let request = pool.request();
-    const userRes = await request
-      .input("Username", sql.NVarChar(50), username)
-      .query("SELECT Id FROM Users WHERE Username = @Username");
-
-    if (userRes.recordset.length === 0) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const userId = userRes.recordset[0].Id;
-
-    // 2) جلب contacts المقبولين فقط
-    request = pool.request();
-    const contactsRes = await request
-      .input("UserId", sql.Int, userId)
-      .query(`
-        SELECT 
-          u.Username
-        FROM Contacts c
-        JOIN Users u 
-          ON u.Id = c.ContactUserId
-        WHERE c.UserId = @UserId
-          AND c.Status = 'accepted'
-      `);
-
-    res.json(contactsRes.recordset);
-
+    const contacts = await contactsDb.getAcceptedContactsByUsername(username);
+    res.json(contacts);
   } catch (err) {
     console.error("Error loading contacts:", err);
     res.status(500).json({ error: "DB error" });
