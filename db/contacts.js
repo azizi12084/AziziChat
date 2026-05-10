@@ -52,7 +52,32 @@ async function getPendingRequestsByUsername(username) {
 
   return result.rows.map(mapContact);
 }
+
+async function findContactById(contactId) {
+  const result = await pool.query(
+    `
+    SELECT userid, contactuserid, status
+    FROM contacts
+    WHERE id = $1
+    `,
+    [contactId]
+  );
+
+  return mapContact(result.rows[0]);
+}
+
+async function deleteContactById(contactId) {
+  await pool.query(
+    `
+    DELETE FROM contacts
+    WHERE id = $1
+    `,
+    [contactId]
+  );
+}
 module.exports = {
   getAcceptedContactsByUsername,
+  findContactById,
+  deleteContactById,
   getPendingRequestsByUsername
 };

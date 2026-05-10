@@ -339,33 +339,17 @@ app.post("/api/contacts/reject", async (req, res) => {
 
   try {
     // 1) جلب الطلب الحالي
-    let request = pool.request();
-    const contactRes = await request
-      .input("Id", sql.Int, contactId)
-      .query(`
-        SELECT UserId, ContactUserId, Status
-        FROM Contacts
-        WHERE Id = @Id
-      `);
+    const contact = await contactsDb.findContactById(contactId);
 
-    if (contactRes.recordset.length === 0) {
+    if (!contact) {
       return res.status(404).json({ error: "Contact request not found" });
     }
-
-    const contact = contactRes.recordset[0];
 
     if (contact.Status !== "pending") {
       return res.json({ message: "Request already processed" });
     }
 
-    // 2) حذف الطلب
-    request = pool.request();
-    await request
-      .input("Id", sql.Int, contactId)
-      .query(`
-        DELETE FROM Contacts
-        WHERE Id = @Id
-      `);
+    await contactsDb.deleteContactById(contactId);
 
     res.json({ success: true, message: "Contact request rejected" });
 
