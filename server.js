@@ -8,7 +8,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const { sql, pool, poolConnect } = require("./db_postgres_compat");
-
+const usersDb = require("./db/users");
 const { Resend } = require("resend");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -711,29 +711,18 @@ app.post("/api/login", async (req, res) => {
 
     const { login, password } = req.body;
 
-    const result = await pool.request()
-      .input("Login", sql.NVarChar(100), login.trim())
-      .query(`
-        SELECT TOP 1 Id, Username, Email, PasswordHash
-        FROM Users
-        WHERE Username = @Login OR Email = @Login
-      `);
+    const user = await usersDb.findUserForLogin(login.trim());
 
-    if (result.recordset.length === 0) {
+    if (!user) {
       return res.status(401).json({ error: "المستخدم غير موجود" });
     }
-
-    const user = result.recordset[0];
 
     const isMatch = await comparePassword(password, user.PasswordHash);
     if (!isMatch) {
       return res.status(401).json({ error: "كلمة المرور غير صحيحة" });
     }
 
-    await pool.request()
-      .input("Id", sql.Int, user.Id)
-      .query("UPDATE Users SET LastLogin = SYSDATETIME() WHERE Id = @Id");
-
+    await usersDb.updateLastLogin(user.Id);
     res.json({ success: true, user });
 
   } catch (err) {
