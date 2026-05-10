@@ -92,6 +92,17 @@ async function updateLastLogin(userId) {
     [userId]
   );
 }
+async function getAllUsers() {
+  const result = await pool.query(
+    `
+    SELECT id, username
+    FROM users
+    ORDER BY username
+    `
+  );
+
+  return result.rows.map(mapUser);
+}
 
 module.exports = {
   findUserByUsername,
@@ -99,5 +110,7 @@ module.exports = {
   findUserByUsernameOrEmail,
   createVerifiedUser,
   findUserForLogin,
+  getAllUsers,
   updateLastLogin
+  
 };

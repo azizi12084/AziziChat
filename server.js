@@ -206,12 +206,8 @@ async function comparePassword(plain, hash) {
 // 🧑‍🤝‍🧑 API: جلب جميع المستخدمين (للاختيار من القائمة)
 app.get("/api/users", async (req, res) => {
   try {
-    const result = await pool.request().query(`
-      SELECT Id, Username
-      FROM Users
-      ORDER BY Username
-    `);
-    res.json(result.recordset);
+    const users = await usersDb.getAllUsers();
+    res.json(users);
   } catch (err) {
     console.error("Error while fetching users:", err);
     res.status(500).json({ error: "DB error" });
