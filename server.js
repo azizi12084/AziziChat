@@ -7,7 +7,7 @@ const helmet = require("helmet");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
-const { sql, pool, poolConnect } = require("./db_postgres_compat");
+const { poolConnect } = require("./db_pg");
 const usersDb = require("./db/users");
 const contactsDb = require("./db/contacts");
 const roomsDb = require("./db/rooms");
@@ -553,7 +553,7 @@ app.post("/api/verify-email", async (req, res) => {
 // 🔐 API: تسجيل الدخول بواسطة (إيميل أو اسم مستخدم) + كلمة مرور
 app.post("/api/login", async (req, res) => {
   try {
-    //await poolConnect; // 🔥 مهم جداً
+ 
 
     const { login, password } = req.body;
 
