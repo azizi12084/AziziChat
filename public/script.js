@@ -368,6 +368,13 @@ window.addEventListener('popstate', (e) => {
   }
 });
 /* ================== الرسائل / المحادثة ================== */
+function clearEmptyChatPlaceholder() {
+  const emptyPlaceholder = messagesDiv.querySelector(".empty-chat-placeholder");
+
+  if (emptyPlaceholder) {
+    emptyPlaceholder.remove();
+  }
+}
 
 async function loadHistory(user1, user2) {
   try {
@@ -377,8 +384,13 @@ async function loadHistory(user1, user2) {
     const data = await res.json();
 
     messagesDiv.innerHTML = "";
+
     if (!data.length) {
-      messagesDiv.textContent = "لا توجد رسائل بعد بينكما، ابدأ المحادثة 😊";
+      messagesDiv.innerHTML = `
+        <p class="empty-chat-placeholder" style="text-align: center;">
+          لا توجد رسائل بعد بينكما، ابدأ المحادثة 😊
+        </p>
+      `;
       return;
     }
 
@@ -392,6 +404,7 @@ async function loadHistory(user1, user2) {
 }
 
 function appendMessage(senderUsername, text, createdAt) {
+  clearEmptyChatPlaceholder();
   const div = document.createElement("div");
   div.classList.add("msg");
 
