@@ -4,6 +4,9 @@ const socket = io();
 
 const loginSection = document.getElementById("loginSection");
 const chatSection  = document.getElementById("chatSection");
+const languageSection = document.getElementById("languageSection");
+const languageStartSelect = document.getElementById("languageStartSelect");
+const btnStartLanguage = document.getElementById("btnStartLanguage");
 
 // عناصر واجهة الدخول الجديدة
 const loginIdentifierInput = document.getElementById("loginIdentifier");
@@ -46,6 +49,8 @@ const pendingRequestsList = document.getElementById("pendingRequestsList");
 const btnResendCode     = document.getElementById("btnResendCode");
 const verifyTimer       = document.getElementById("verifyTimer");
 const verifyTimerValue  = document.getElementById("verifyTimerValue");
+const verifyTimerPrefix = document.getElementById("verifyTimerPrefix");
+const verifyTimerUnit   = document.getElementById("verifyTimerUnit");
 
 // جسم نموذج الدخول/التسجيل + زر الرجوع
 const authBody          = document.querySelector(".auth-body");
@@ -62,6 +67,153 @@ let verifyTimerInterval = null;
 
 let currentUser   = null;
 let activePartner = null;
+
+function applyLanguage(langOverride) {
+  const lang = langOverride || getCurrentLanguage();
+  const isArabic = lang === "ar";
+
+  document.documentElement.lang = lang;
+  document.documentElement.dir = isArabic ? "rtl" : "ltr";
+  document.body.dir = isArabic ? "rtl" : "ltr";
+
+  document.body.classList.toggle("rtl", isArabic);
+  document.body.classList.toggle("ltr", !isArabic);
+
+  if (languageStartSelect) {
+    languageStartSelect.value = lang;
+  }
+
+  const languageTitle = document.getElementById("languageTitle");
+  if (languageTitle) languageTitle.textContent = t("languageTitle", lang);
+
+  const languageSubtitle = document.getElementById("languageSubtitle");
+  if (languageSubtitle) languageSubtitle.textContent = t("languageSubtitle", lang);
+
+  if (btnStartLanguage) btnStartLanguage.textContent = t("startButton", lang);
+
+  const authSubtitle = document.querySelector(".auth-subtitle");
+  if (authSubtitle) authSubtitle.textContent = t("appSubtitle", lang);
+
+  const loginTab = document.querySelector('.auth-tab[data-tab="login"]');
+  if (loginTab) loginTab.textContent = t("loginTab", lang);
+
+  const registerTab = document.querySelector('.auth-tab[data-tab="register"]');
+  if (registerTab) registerTab.textContent = t("registerTab", lang);
+
+  const loginIdentifierLabel = document.querySelector('label[for="loginIdentifier"]');
+  if (loginIdentifierLabel) loginIdentifierLabel.textContent = t("loginIdentifierLabel", lang);
+  if (loginIdentifierInput) loginIdentifierInput.placeholder = t("loginIdentifierPlaceholder", lang);
+
+  const loginPasswordLabel = document.querySelector('label[for="loginPassword"]');
+  if (loginPasswordLabel) loginPasswordLabel.textContent = t("loginPasswordLabel", lang);
+  if (loginPasswordInput) loginPasswordInput.placeholder = t("loginPasswordPlaceholder", lang);
+
+  if (btnLogin) btnLogin.textContent = t("loginButton", lang);
+
+  const regUsernameLabel = document.querySelector('label[for="regUsername"]');
+  if (regUsernameLabel) regUsernameLabel.textContent = t("registerUsernameLabel", lang);
+  if (regUsernameInput) regUsernameInput.placeholder = t("registerUsernamePlaceholder", lang);
+
+  const regEmailLabel = document.querySelector('label[for="regEmail"]');
+  if (regEmailLabel) regEmailLabel.textContent = t("registerEmailLabel", lang);
+  if (regEmailInput) regEmailInput.placeholder = t("registerEmailPlaceholder", lang);
+
+  const regPasswordLabel = document.querySelector('label[for="regPassword"]');
+  if (regPasswordLabel) regPasswordLabel.textContent = t("registerPasswordLabel", lang);
+  if (regPasswordInput) regPasswordInput.placeholder = t("registerPasswordPlaceholder", lang);
+
+  if (btnRegister) btnRegister.textContent = t("registerButton", lang);
+
+  const verifyTitle = document.querySelector(".verify-title");
+  if (verifyTitle) verifyTitle.textContent = t("verifyTitle", lang);
+
+  const verifyText = document.querySelector(".verify-text");
+  if (verifyText) verifyText.textContent = t("verifyText", lang);
+
+  const verifyCodeLabel = document.querySelector('label[for="verifyCode"]');
+  if (verifyCodeLabel) verifyCodeLabel.textContent = t("verifyCodeLabel", lang);
+
+  if (verifyCodeInput) verifyCodeInput.placeholder = t("verifyCodePlaceholder", lang);
+  if (btnVerifyCode) btnVerifyCode.textContent = t("verifyButton", lang);
+  if (btnResendCode) btnResendCode.textContent = t("resendCodeButton", lang);
+  if (btnBackToRegister) btnBackToRegister.textContent = t("backToRegister", lang);
+
+  if (verifyTimerPrefix) verifyTimerPrefix.textContent = t("resendTimerPrefix", lang);
+  if (verifyTimerUnit) verifyTimerUnit.textContent = t("secondsWord", lang);
+
+  const authFooterText = document.querySelector(".auth-footer-text");
+  if (authFooterText) authFooterText.textContent = t("authFooterText", lang);
+
+  const contactsTab = document.querySelector('.contacts-tab[data-tab="contacts"]');
+  if (contactsTab) contactsTab.textContent = t("contactsTab", lang);
+
+  const addContactTab = document.querySelector('.contacts-tab[data-tab="add-contact"]');
+  if (addContactTab) addContactTab.textContent = t("addContactTab", lang);
+
+  const requestsTab = document.querySelector('.contacts-tab[data-tab="requests"]');
+  if (requestsTab) requestsTab.textContent = t("requestsTab", lang);
+
+  if (contactsSearch) contactsSearch.placeholder = t("contactsSearchPlaceholder", lang);
+
+  const addContactTitle = document.querySelector(".add-contact-form h3");
+  if (addContactTitle) addContactTitle.textContent = t("addContactTitle", lang);
+
+  const newContactUsernameLabel = document.querySelector('label[for="newContactUsername"]');
+  if (newContactUsernameLabel) newContactUsernameLabel.textContent = t("newContactUsernameLabel", lang);
+
+  if (newContactUsernameInput) {
+    newContactUsernameInput.placeholder = t("newContactUsernamePlaceholder", lang);
+  }
+
+  if (btnSendContactRequest) {
+    btnSendContactRequest.textContent = t("sendContactRequestButton", lang);
+  }
+
+  const requestsTitle = document.querySelector('.contacts-panel[data-panel="requests"] h3');
+  if (requestsTitle) requestsTitle.textContent = t("pendingRequestsTitle", lang);
+
+  if (chatHeaderStatus) chatHeaderStatus.textContent = t("chatOnline", lang);
+
+  const noChatSelected = document.querySelector(".no-chat-selected");
+  if (noChatSelected) noChatSelected.textContent = t("noChatSelected", lang);
+
+  if (messageInput) messageInput.placeholder = t("messagePlaceholder", lang);
+
+  const sendButton = document.querySelector('#chatForm button[type="submit"]');
+  if (sendButton) sendButton.textContent = t("sendButton", lang);
+}
+
+function showInitialScreen() {
+  if (languageStartSelect) {
+    languageStartSelect.value = "en";
+  }
+
+  applyLanguage("en");
+
+  if (languageSection) languageSection.style.display = "flex";
+  if (loginSection) loginSection.style.display = "none";
+  if (chatSection) chatSection.style.display = "none";
+}
+
+if (languageStartSelect) {
+  languageStartSelect.addEventListener("change", () => {
+    applyLanguage(languageStartSelect.value);
+  });
+}
+
+if (btnStartLanguage) {
+  btnStartLanguage.addEventListener("click", () => {
+    const selectedLang = languageStartSelect.value;
+
+    setCurrentLanguage(selectedLang);
+    applyLanguage(selectedLang);
+
+    if (languageSection) languageSection.style.display = "none";
+    if (loginSection) loginSection.style.display = "flex";
+  });
+}
+
+
 
 // متغيرات لتخزين معلومات المستخدم الذي ينتظر التفعيل
 let pendingUserId    = null;
@@ -107,11 +259,46 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
 
 function getRequestErrorMessage(err) {
   if (err.name === "AbortError") {
-    return "الطلب استغرق وقتًا طويلًا. تحقق من الاتصال وحاول مرة أخرى.";
+    return t("requestTimeout");
   }
 
-  return "خطأ في الاتصال بالسيرفر. حاول مرة أخرى.";
+  return t("requestError");
 }
+function translateServerMessage(message) {
+  if (!message) return t("serverGenericError");
+
+  const lower = String(message).toLowerCase();
+
+  if (message.includes("الكود غير صحيح") || lower.includes("invalid code")) {
+    return t("invalidCode");
+  }
+
+  if (message.includes("انتهت صلاحية") || lower.includes("expired")) {
+    return t("expiredCode");
+  }
+
+  if (message.includes("المستخدم غير موجود") || lower.includes("user not found")) {
+    return t("userNotFound");
+  }
+
+  if (message.includes("كلمة المرور") || lower.includes("password")) {
+    return t("wrongPassword");
+  }
+
+  if (message.includes("خطأ في السيرفر") || message.includes("حدث خطأ")) {
+    return t("serverGenericError");
+  }
+  if (message.includes("هذا المستخدم موجود بالفعل ضمن جهات اتصالك")) {
+    return t("contactAlreadyExists");
+  }
+
+  if (message.includes("تم إرسال طلب صداقة لهذا المستخدم مسبقاً") || message.includes("تم إرسال طلب صداقة لهذا المستخدم مسبقًا")) {
+    return t("friendRequestAlreadyPending");
+  }
+
+  return message;
+}
+
 
 /* ================== عدّاد إعادة الإرسال ================== */
 
@@ -212,36 +399,35 @@ async function loadUsers() {
     const data = await res.json();
 
     if (!contactsList) return;
-    contactsList.innerHTML = '';
+    contactsList.innerHTML = "";
 
     if (!Array.isArray(data) || data.length === 0) {
-      contactsList.innerHTML = '<p class="empty-requests">لا توجد جهات اتصال</p>';
+      contactsList.innerHTML = `<p class="empty-requests">${t("noContacts")}</p>`;
       return;
     }
 
     data.forEach(u => {
-      const item = document.createElement('div');
-      item.className = 'contact-item';
+      const item = document.createElement("div");
+      item.className = "contact-item";
       item.dataset.username = u.Username;
       item.innerHTML = `
-        <div class="contact-avatar">${(u.Username || '؟').charAt(0).toUpperCase()}</div>
+        <div class="contact-avatar">${(u.Username || "?").charAt(0).toUpperCase()}</div>
         <div class="contact-meta">
           <div class="contact-name">${u.Username}</div>
           <div class="contact-last"></div>
         </div>
       `;
 
-      item.addEventListener('click', async () => {
-        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
-        item.classList.add('active');
+      item.addEventListener("click", async () => {
+        document.querySelectorAll(".contact-item").forEach(el => el.classList.remove("active"));
+        item.classList.add("active");
 
         activePartner = u.Username;
-        messagesDiv.textContent = 'يتم تحميل المحادثة...';
+        messagesDiv.textContent = t("loadingConversation");
 
-        // set header info
         setChatHeader(u.Username);
 
-        socket.emit('joinRoom', { user1: currentUser, user2: activePartner });
+        socket.emit("joinRoom", { user1: currentUser, user2: activePartner });
         await loadHistory(currentUser, activePartner);
         showChatForMobile();
         messageInput.focus();
@@ -250,19 +436,18 @@ async function loadUsers() {
       contactsList.appendChild(item);
     });
 
-    // apply search filter
     if (contactsSearch) {
-      contactsSearch.addEventListener('input', () => {
+      contactsSearch.addEventListener("input", () => {
         const q = contactsSearch.value.trim().toLowerCase();
-        document.querySelectorAll('.contact-item').forEach(el => {
-          const name = (el.dataset.username || '').toLowerCase();
-          el.style.display = name.includes(q) ? '' : 'none';
+        document.querySelectorAll(".contact-item").forEach(el => {
+          const name = (el.dataset.username || "").toLowerCase();
+          el.style.display = name.includes(q) ? "" : "none";
         });
       });
     }
 
   } catch (err) {
-    console.error('Error loading contacts:', err);
+    console.error("Error loading contacts:", err);
   }
 }
 
@@ -270,13 +455,16 @@ function isMobileView() {
   return window.matchMedia('(max-width:900px)').matches;
 }
 
-function setChatHeader(username){
-  if(!chatHeader || !chatHeaderName || !chatHeaderAvatar || !chatHeaderStatus) return;
-  chatHeaderName.textContent = username || '';
-  chatHeaderAvatar.textContent = (username && username.charAt(0)) ? username.charAt(0).toUpperCase() : '؟';
-  // status: we can later fetch presence; for now set default text
-  chatHeaderStatus.textContent = 'متصل';
-  chatHeader.style.display = 'block';
+function setChatHeader(username) {
+  if (!chatHeader || !chatHeaderName || !chatHeaderAvatar || !chatHeaderStatus) return;
+
+  chatHeaderName.textContent = username || "";
+  chatHeaderAvatar.textContent = (username && username.charAt(0))
+    ? username.charAt(0).toUpperCase()
+    : "?";
+
+  chatHeaderStatus.textContent = t("chatOnline");
+  chatHeader.style.display = "block";
 }
 
 function updateLayoutAfterLogin() {
@@ -388,7 +576,7 @@ async function loadHistory(user1, user2) {
     if (!data.length) {
       messagesDiv.innerHTML = `
         <p class="empty-chat-placeholder" style="text-align: center;">
-          لا توجد رسائل بعد بينكما، ابدأ المحادثة 😊
+          ${t("emptyChat")}
         </p>
       `;
       return;
@@ -399,7 +587,7 @@ async function loadHistory(user1, user2) {
     });
   } catch (err) {
     console.error("Error loading history:", err);
-    messagesDiv.textContent = "خطأ في تحميل الرسائل.";
+    messagesDiv.textContent = t("historyLoadError");
   }
 }
 
@@ -428,19 +616,19 @@ function appendMessage(senderUsername, text, createdAt) {
 /* ================== تسجيل الدخول ================== */
 
 btnLogin.addEventListener("click", async () => {
-  const login    = loginIdentifierInput.value.trim();
+  const login = loginIdentifierInput.value.trim();
   const password = loginPasswordInput.value;
 
-  clearAuthMessage(); // تنظيف الرسائل القديمة
+  clearAuthMessage();
 
   if (!login || !password) {
-    showAuthMessage("error", "الرجاء إدخال اسم المستخدم/الإيميل وكلمة المرور");
+    showAuthMessage("error", t("loginRequired"));
     return;
   }
 
   try {
-    btnLogin.disabled = true; // 🔒 تعطيل زر تسجيل الدخول مؤقتًا
-    btnLogin.textContent = "الرجاء الانتظار...";
+    btnLogin.disabled = true;
+    btnLogin.textContent = t("loginLoading");
 
     const res = await fetchWithTimeout("/api/login", {
       method: "POST",
@@ -451,15 +639,14 @@ btnLogin.addEventListener("click", async () => {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showAuthMessage("error", data.error || "فشل تسجيل الدخول");
+      showAuthMessage("error", translateServerMessage(data.error) || t("loginFailed"));
       return;
     }
 
-    // ⭐ تم تسجيل الدخول بنجاح
     currentUser = data.user.Username;
 
     loginSection.style.display = "none";
-    chatSection.style.display  = "block";
+    chatSection.style.display = "block";
 
     await loadUsers();
     await loadPendingRequests();
@@ -471,8 +658,8 @@ btnLogin.addEventListener("click", async () => {
     console.error("Error in login:", err);
     showAuthMessage("error", getRequestErrorMessage(err));
   } finally {
-    btnLogin.disabled = false;    // 🔓 إعادة تفعيل الزر
-    btnLogin.textContent = "تسجيل الدخول";
+    btnLogin.disabled = false;
+    btnLogin.textContent = t("loginButton");
   }
 });
 
@@ -480,27 +667,29 @@ btnLogin.addEventListener("click", async () => {
 
 btnRegister.addEventListener("click", async () => {
   const username = regUsernameInput.value.trim();
-  const email    = regEmailInput.value.trim();
+  const email = regEmailInput.value.trim();
   const password = regPasswordInput.value;
 
   clearAuthMessage();
 
   if (!username) {
-    showAuthMessage("error", "الرجاء إدخال اسم المستخدم");
+    showAuthMessage("error", t("registerUsernameRequired"));
     return;
   }
+
   if (!email) {
-    showAuthMessage("error", "الرجاء إدخال البريد الإلكتروني");
+    showAuthMessage("error", t("registerEmailRequired"));
     return;
   }
+
   if (!password || password.length < 6) {
-    showAuthMessage("error", "كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+    showAuthMessage("error", t("registerPasswordMin"));
     return;
   }
 
   try {
     btnRegister.disabled = true;
-    btnRegister.textContent = "جاري إنشاء الحساب...";
+    btnRegister.textContent = t("registerLoading");
 
     const res = await fetchWithTimeout("/api/register", {
       method: "POST",
@@ -511,29 +700,24 @@ btnRegister.addEventListener("click", async () => {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showAuthMessage("error", data.error || "حدث خطأ أثناء إنشاء الحساب");
+      showAuthMessage("error", translateServerMessage(data.error) || t("registerFailed"));
       return;
     }
 
-    // نجاح → تخزين بيانات الحساب المنتظر تفعيله
-    pendingUserId    = data.userId;
-    pendingUsername  = data.user.Username;
+    pendingUserId = data.userId;
+    pendingUsername = data.user.Username;
     pendingUserEmail = data.user.Email;
 
-    showAuthMessage("success", data.message || "تم إنشاء الطلب، تم إرسال كود التفعيل إلى بريدك الإلكتروني.");
+    showAuthMessage("success", t("registerSuccess"));
 
-    // إظهار صندوق إدخال كود التفعيل
     verifyBox.style.display = "block";
 
-    // إخفاء فورم التسجيل حتى لا يتشتت المستخدم
     if (authBody) {
       authBody.style.display = "none";
     }
 
-    // تعبئة خانة الدخول تلقائياً
     loginIdentifierInput.value = pendingUserEmail;
 
-    // بدء العدّاد لأول مرة: 60 ثانية قبل إظهار زر إعادة الإرسال
     startVerifyTimer(60);
 
   } catch (err) {
@@ -541,7 +725,7 @@ btnRegister.addEventListener("click", async () => {
     showAuthMessage("error", getRequestErrorMessage(err));
   } finally {
     btnRegister.disabled = false;
-    btnRegister.textContent = "إنشاء حساب";
+    btnRegister.textContent = t("registerButton");
   }
 });
 
@@ -553,18 +737,18 @@ btnVerifyCode.addEventListener("click", async () => {
   clearAuthMessage();
 
   if (!pendingUserId) {
-    showAuthMessage("error", "لا يوجد حساب قيد التفعيل. الرجاء إنشاء حساب جديد أولاً.");
+    showAuthMessage("error", t("verifyNoPendingAccount"));
     return;
   }
 
   if (!code) {
-    showAuthMessage("error", "الرجاء إدخال كود التفعيل");
+    showAuthMessage("error", t("verifyCodeRequired"));
     return;
   }
 
   try {
     btnVerifyCode.disabled = true;
-    btnVerifyCode.textContent = "جاري التفعيل...";
+    btnVerifyCode.textContent = t("verifyLoading");
 
     const res = await fetchWithTimeout("/api/verify-email", {
       method: "POST",
@@ -578,30 +762,29 @@ btnVerifyCode.addEventListener("click", async () => {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showAuthMessage("error", data.error || "فشل تفعيل البريد الإلكتروني");
+      showAuthMessage("error", translateServerMessage(data.error) || t("verifyFailed"));
       return;
     }
 
-    showAuthMessage("success", "تم تفعيل البريد الإلكتروني بنجاح. يتم الآن فتح الشات...");
+    showAuthMessage("success", t("verifySuccess"));
 
-    // اعتبار المستخدم الآن Logged in
     currentUser = pendingUsername;
 
     loginSection.style.display = "none";
-    chatSection.style.display  = "block";
+    chatSection.style.display = "block";
 
-    // إخفاء صندوق التفعيل
     verifyBox.style.display = "none";
-    verifyCodeInput.value   = "";
+    verifyCodeInput.value = "";
 
-    // إلغاء أي عدّاد وإخفاء عناصره
     if (verifyTimerInterval) {
       clearInterval(verifyTimerInterval);
       verifyTimerInterval = null;
     }
+
     if (verifyTimer) {
       verifyTimer.style.display = "none";
     }
+
     if (btnResendCode) {
       btnResendCode.style.display = "none";
     }
@@ -610,9 +793,8 @@ btnVerifyCode.addEventListener("click", async () => {
     await loadPendingRequests();
     updateLayoutAfterLogin();
 
-    // تنظيف متغيرات التفعيل
-    pendingUserId    = null;
-    pendingUsername  = null;
+    pendingUserId = null;
+    pendingUsername = null;
     pendingUserEmail = null;
 
     clearAuthMessage();
@@ -621,7 +803,7 @@ btnVerifyCode.addEventListener("click", async () => {
     showAuthMessage("error", getRequestErrorMessage(err));
   } finally {
     btnVerifyCode.disabled = false;
-    btnVerifyCode.textContent = "تفعيل البريد الإلكتروني والدخول";
+    btnVerifyCode.textContent = t("verifyButton");
   }
 });
 
@@ -632,16 +814,16 @@ if (btnResendCode) {
     clearAuthMessage();
 
     if (!pendingUserId) {
-      showAuthMessage("error", "لا يوجد حساب قيد التفعيل. الرجاء إنشاء حساب جديد أولاً.");
+      showAuthMessage("error", t("resendNoPendingAccount"));
       return;
     }
 
     const username = regUsernameInput.value.trim();
-    const email    = regEmailInput.value.trim();
+    const email = regEmailInput.value.trim();
     const password = regPasswordInput.value;
 
     if (!username || !email || !password) {
-      showAuthMessage("error", "تأكد من عدم تعديل بيانات التسجيل قبل إعادة إرسال الكود.");
+      showAuthMessage("error", t("resendCheckData"));
       return;
     }
 
@@ -657,23 +839,21 @@ if (btnResendCode) {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        showAuthMessage("error", data.error || "لا يمكن إعادة إرسال الكود الآن.");
+        showAuthMessage("error", translateServerMessage(data.error) || t("resendFailed"));
         return;
       }
 
-      // تحديث بيانات pending لو تغيرت
-      pendingUserId    = data.userId;
-      pendingUsername  = data.user.Username;
+      pendingUserId = data.userId;
+      pendingUsername = data.user.Username;
       pendingUserEmail = data.user.Email;
 
-      showAuthMessage("success", "تم إرسال كود تفعيل جديد إلى بريدك.");
+      showAuthMessage("success", t("resendSuccess"));
 
-      // تشغيل عدّاد جديد من 60 ثانية
       startVerifyTimer(60);
 
     } catch (err) {
       console.error("Error in resend code:", err);
-      showAuthMessage("error", getRequestErrorMessage(err));    
+      showAuthMessage("error", getRequestErrorMessage(err));
     } finally {
       btnResendCode.disabled = false;
     }
@@ -704,7 +884,7 @@ chatForm.addEventListener("submit", (e) => {
   const text = messageInput.value.trim();
   if (!text) return;
   if (!currentUser || !activePartner) {
-    alert("اختر أولاً الشخص الذي تريد محادثته");
+    alert(t("chooseChatFirst"));
     return;
   }
 
@@ -750,24 +930,23 @@ if (btnSendContactRequest) {
     const username = newContactUsernameInput.value.trim();
 
     if (!username) {
-      showContactMessage("error", "الرجاء إدخال اسم المستخدم");
+      showContactMessage("error", t("contactUsernameRequired"));
       return;
     }
 
     if (!currentUser) {
-      showContactMessage("error", "يجب تسجيل الدخول أولاً");
+      showContactMessage("error", t("loginBeforeContact"));
       return;
     }
 
-    // التحقق من عدم إضافة نفسك
     if (username.toLowerCase() === currentUser.toLowerCase()) {
-      showContactMessage("error", "لا يمكنك إضافة نفسك");
+      showContactMessage("error", t("cannotAddYourself"));
       return;
     }
 
     try {
       btnSendContactRequest.disabled = true;
-      btnSendContactRequest.textContent = "جاري الإرسال...";
+      btnSendContactRequest.textContent = t("sending");
 
       const res = await fetchWithTimeout("/api/contacts/request", {
         method: "POST",
@@ -781,21 +960,18 @@ if (btnSendContactRequest) {
       const data = await res.json();
 
       if (!res.ok) {
-        // عرض رسالة الخطأ من السيرفر
-        const errorMessage = data.error || "فشل إرسال طلب الصداقة";
-        showContactMessage("error", errorMessage);
+        showContactMessage("error", translateServerMessage(data.error) || t("sendContactFailed"));
         return;
       }
 
       if (!data.success) {
-        showContactMessage("error", data.error || "فشل إرسال طلب الصداقة");
+        showContactMessage("error", translateServerMessage(data.error) || t("sendContactFailed"));
         return;
       }
 
-      showContactMessage("success", data.message || "تم إرسال طلب الصداقة بنجاح");
+      showContactMessage("success", t("contactRequestSent"));
       newContactUsernameInput.value = "";
 
-      // تحديث قائمة جهات الاتصال بعد إرسال الطلب
       await loadUsers();
 
     } catch (err) {
@@ -803,7 +979,7 @@ if (btnSendContactRequest) {
       showContactMessage("error", getRequestErrorMessage(err));
     } finally {
       btnSendContactRequest.disabled = false;
-      btnSendContactRequest.textContent = "إرسال طلب صداقة";
+      btnSendContactRequest.textContent = t("sendContactRequestButton");
     }
   });
 }
@@ -840,18 +1016,18 @@ async function loadPendingRequests() {
   if (!currentUser) return;
 
   try {
-    pendingRequestsList.innerHTML = '<p class="loading-text">جاري التحميل...</p>';
+    pendingRequestsList.innerHTML = `<p class="loading-text">${t("loadingRequests")}</p>`;
 
     const res = await fetchWithTimeout(`/api/contacts/requests/${encodeURIComponent(currentUser)}`);
     const data = await res.json();
 
     if (!res.ok) {
-      pendingRequestsList.innerHTML = '<p class="error-text">خطأ في تحميل الطلبات</p>';
+      pendingRequestsList.innerHTML = `<p class="error-text">${t("loadRequestsError")}</p>`;
       return;
     }
 
     if (data.length === 0) {
-      pendingRequestsList.innerHTML = '<p class="empty-requests">لا توجد طلبات صداقة واردة</p>';
+      pendingRequestsList.innerHTML = `<p class="empty-requests">${t("noIncomingRequests")}</p>`;
       return;
     }
 
@@ -865,12 +1041,15 @@ async function loadPendingRequests() {
           <div class="request-item-username">${request.FromUser}</div>
         </div>
         <div class="request-item-actions">
-          <button class="btn-accept" data-contact-id="${request.ContactId}">قبول</button>
-          <button class="btn-reject" data-contact-id="${request.ContactId}">رفض</button>
+          <button class="btn-accept" data-contact-id="${request.ContactId}">
+            ${t("acceptButton")}
+          </button>
+          <button class="btn-reject" data-contact-id="${request.ContactId}">
+            ${t("rejectButton")}
+          </button>
         </div>
       `;
 
-      // إضافة مستمعي الأحداث للأزرار
       const acceptBtn = requestItem.querySelector(".btn-accept");
       const rejectBtn = requestItem.querySelector(".btn-reject");
 
@@ -882,7 +1061,7 @@ async function loadPendingRequests() {
 
   } catch (err) {
     console.error("Error loading pending requests:", err);
-    pendingRequestsList.innerHTML = '<p class="error-text">خطأ في تحميل الطلبات</p>';
+    pendingRequestsList.innerHTML = `<p class="error-text">${t("loadRequestsError")}</p>`;
   }
 }
 
@@ -898,15 +1077,14 @@ async function handleAcceptRequest(contactId) {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showPendingRequestMessage("error", data.error || "فشل قبول طلب الصداقة");
+      showPendingRequestMessage("error", translateServerMessage(data.error) || t("acceptRequestFailed"));
       return;
     }
 
-    // تحديث القوائم
     await loadPendingRequests();
     await loadUsers();
 
-    showPendingRequestMessage("success", "تم قبول طلب الصداقة بنجاح");
+    showPendingRequestMessage("success", t("acceptRequestSuccess"));
 
   } catch (err) {
     console.error("Error accepting request:", err);
@@ -916,7 +1094,7 @@ async function handleAcceptRequest(contactId) {
 
 // رفض طلب صداقة
 async function handleRejectRequest(contactId) {
-  if (!confirm("هل أنت متأكد من رفض طلب الصداقة؟")) {
+  if (!confirm(t("confirmRejectRequest"))) {
     return;
   }
 
@@ -930,14 +1108,13 @@ async function handleRejectRequest(contactId) {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showPendingRequestMessage("error", data.error || "فشل رفض طلب الصداقة");
+      showPendingRequestMessage("error", translateServerMessage(data.error) || t("rejectRequestFailed"));
       return;
     }
 
-    // تحديث القائمة
     await loadPendingRequests();
 
-    showPendingRequestMessage("success", "تم رفض طلب الصداقة");
+    showPendingRequestMessage("success", t("rejectRequestSuccess"));
 
   } catch (err) {
     console.error("Error rejecting request:", err);
@@ -949,6 +1126,7 @@ async function handleRejectRequest(contactId) {
 
 clearAuthMessage();
 loadUsers();
+showInitialScreen();
 
 (function(){
   const root = document.documentElement;

@@ -14,16 +14,35 @@
     <div class="app-inner">
 
       <div class="content">
+        <!-- LANGUAGE SELECT -->
+        <div id="languageSection" class="language-wrapper">
+          <div class="language-card">
+            <h1 class="language-logo">AziziChat</h1>
+            <h2 id="languageTitle">Choose Language</h2>
+            <p id="languageSubtitle">Select the interface language to continue</p>
+
+            <select id="languageStartSelect" class="auth-input language-select">
+              <option value="en" selected >English</option>
+              <option value="tr">Türkçe</option>
+              <option value="ar">العربية</option>
+            </select>
+
+            <button type="button" class="btn btn-main language-start-btn" id="btnStartLanguage">
+              Start
+            </button>
+          </div>
+        </div>
         <!-- LOGIN -->
-        <div id="loginSection" class="auth-wrapper">
+        <div id="loginSection" class="auth-wrapper" style="display: none;">
           <div class="auth-card">
             <div class="auth-header">
-              <div class="auth-logo">💬</div>
+              
               <div>
                 <h2 class="auth-title">Azizi Chat</h2>
                 <p class="auth-subtitle">سجل الدخول أو أنشئ حسابًا جديدًا للبدء في الدردشة</p>
               </div>
             </div>
+            
             <div id="authAlert" class="auth-alert" style="display:none;"></div>
 
 
@@ -105,45 +124,39 @@
 
             <!-- صندوق تفعيل البريد الإلكتروني -->
             <div id="verifyBox" class="verify-box" style="display: none;">
-              <p class="verify-title">تم إنشاء الحساب 🎉</p>
+              <p class="verify-title">Email Verification</p>
+
               <p class="verify-text">
-                تم إرسال كود تفعيل إلى بريدك الإلكتروني.
-                <br>
-                أدخل الكود هنا لتفعيل حسابك ومتابعة الدخول إلى الشات.
+                Enter the verification code sent to your email.
               </p>
 
               <label class="auth-label" for="verifyCode">
-                كود التفعيل:
+                Verification code
               </label>
+
               <input
                 type="text"
                 id="verifyCode"
                 class="auth-input"
-                placeholder="مثال: 123456"
+                placeholder="Enter the code"
               >
 
               <button type="button" class="btn btn-main auth-submit" id="btnVerifyCode">
-                تفعيل البريد الإلكتروني والدخول
+                Verify
               </button>
 
-              <p class="verify-hint">
-                لم يصلك الكود؟ تفقد مجلد الرسائل غير المرغوب فيها (Spam) أو جرّب بريدًا آخر.
-              </p>
-
-              <!-- 🔹 عدّاد إعادة الإرسال -->
               <p class="verify-timer" id="verifyTimer" style="display: none;">
-                يمكنك طلب كود جديد بعد
+                <span id="verifyTimerPrefix">You can request a new code after</span>
                 <span id="verifyTimerValue">60</span>
-                ثانية.
+                <span id="verifyTimerUnit">seconds</span>
               </p>
 
-              <!-- 🔹 زر إعادة الإرسال -->
               <button type="button" class="btn btn-main auth-submit" id="btnResendCode" style="display: none;">
-                إعادة إرسال الكود
+                Resend Code
               </button>
 
               <button type="button" class="btn auth-back" id="btnBackToRegister">
-                ⬅ الرجوع لتعديل البيانات
+                Back
               </button>
             </div>
 
@@ -151,6 +164,8 @@
             <p class="auth-footer-text">
              بعد تسجيل الدخول، يمكنك إضافة جهات اتصال وبدء المحادثة من القائمة الجانبية.
             </p>
+
+
           </div>
         </div>
 
@@ -222,6 +237,8 @@
 
   <!-- سكربت socket.io من السيرفر -->
   <script src="/socket.io/socket.io.js"></script>
+
+  <script src="/lang.js"></script>
   <!-- سكربت الواجهة الأمامية -->
   <script src="/script.js"></script>
 </body>
