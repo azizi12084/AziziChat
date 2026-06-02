@@ -27,8 +27,12 @@ const btnVerifyCode   = document.getElementById("btnVerifyCode");
 const contactsList   = document.getElementById("contactsList");
 const contactsSearch = document.getElementById("contactsSearch");
 const messagesDiv    = document.getElementById("messages");
+
 const chatForm       = document.getElementById("chatForm");
 const messageInput   = document.getElementById("message");
+const mediaInput = document.getElementById("mediaInput");
+const btnChooseMedia = document.getElementById("btnChooseMedia");
+const selectedMediaPreview = document.getElementById("selectedMediaPreview");
 const contactsSection = document.querySelector('.contacts-section');
 const mainArea = document.querySelector('.main');
 const btnBackToContacts = document.getElementById('btnBackToContacts');
@@ -181,6 +185,9 @@ function applyLanguage(langOverride) {
 
   const sendButton = document.querySelector('#chatForm button[type="submit"]');
   if (sendButton) sendButton.textContent = t("sendButton", lang);
+  if (btnChooseMedia) {
+    btnChooseMedia.title = t("chooseImageTitle", lang);
+}
 }
 
 function showInitialScreen() {
@@ -583,7 +590,18 @@ async function loadHistory(user1, user2) {
     }
 
     data.forEach(m => {
-      appendMessage(m.Username, m.Content, m.CreatedAt);
+      appendMessage(
+        m.Username,
+        m.Content,
+        m.CreatedAt,
+        m.MessageType || "text",
+        {
+          data: m.MediaData,
+          name: m.MediaName,
+          mime: m.MediaMime,
+          size: m.MediaSize
+        }
+      );
     });
   } catch (err) {
     console.error("Error loading history:", err);
@@ -591,8 +609,9 @@ async function loadHistory(user1, user2) {
   }
 }
 
-function appendMessage(senderUsername, text, createdAt) {
+function appendMessage(senderUsername, text, createdAt, messageType = "text", media = null) {
   clearEmptyChatPlaceholder();
+
   const div = document.createElement("div");
   div.classList.add("msg");
 
@@ -600,7 +619,17 @@ function appendMessage(senderUsername, text, createdAt) {
   div.classList.add(isSelf ? "self" : "other");
 
   const content = document.createElement("div");
-  content.textContent = text;
+
+  if (messageType === "image" && media && media.data && media.mime) {
+    const img = document.createElement("img");
+    img.className = "chat-image";
+    img.src = `data:${media.mime};base64,${media.data}`;
+    img.alt = media.name || "image";
+    content.appendChild(img);
+  } else {
+    content.textContent = text || "";
+  }
+
   div.appendChild(content);
 
   const time = document.createElement("span");
@@ -873,24 +902,149 @@ socket.on("chatMessage", (msg) => {
   const pair2 = [currentUser, activePartner].sort().join("-");
   if (pair1 !== pair2) return;
 
-  appendMessage(msg.from, msg.text, msg.createdAt);
+  appendMessage(
+    msg.from,
+    msg.text,
+    msg.createdAt,
+    msg.messageType || "text",
+    {
+      data: msg.mediaData,
+      name: msg.mediaName,
+      mime: msg.mediaMime,
+      size: msg.mediaSize
+    }
+  );
 });
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
+
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function validateImageFile(file) {
+  const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
+  const maxSize = 2 * 1024 * 1024; // 1MB
+
+  if (!allowedTypes.includes(file.type)) {
+    return t("invalidImageType");
+  }
+
+  if (file.size > maxSize) {
+    return t("imageTooLarge");
+  }
+
+  return null;
+}
+
+function updateSelectedMediaPreview() {
+  if (!selectedMediaPreview || !mediaInput) return;
+
+  const file = mediaInput.files && mediaInput.files[0];
+
+  if (!file) {
+    selectedMediaPreview.style.display = "none";
+    selectedMediaPreview.innerHTML = "";
+    return;
+  }
+
+  const validationError = validateImageFile(file);
+
+  if (validationError) {
+    selectedMediaPreview.style.display = "flex";
+    selectedMediaPreview.classList.add("selected-media-error");
+    selectedMediaPreview.innerHTML = `
+      <span>${validationError}</span>
+      <button type="button" class="remove-media-btn" id="btnRemoveSelectedMedia" title="${t("removeImageTitle")}">×</button>
+    `;
+  } else {
+    selectedMediaPreview.style.display = "flex";
+    selectedMediaPreview.classList.remove("selected-media-error");
+    selectedMediaPreview.innerHTML = `
+      <span>${t("selectedImagePrefix")} ${file.name}</span>
+      <button type="button" class="remove-media-btn" id="btnRemoveSelectedMedia" title="${t("removeImageTitle")}">×</button>
+    `;
+  }
+
+  const removeBtn = document.getElementById("btnRemoveSelectedMedia");
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      mediaInput.value = "";
+      updateSelectedMediaPreview();
+    });
+  }
+}
 
 /* ================== إرسال رسالة ================== */
 
-chatForm.addEventListener("submit", (e) => {
+if (btnChooseMedia && mediaInput) {
+  btnChooseMedia.addEventListener("click", () => {
+    mediaInput.click();
+  });
+}
+if (mediaInput) {
+  mediaInput.addEventListener("change", updateSelectedMediaPreview);
+}
+chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const text = messageInput.value.trim();
-  if (!text) return;
+  const file = mediaInput && mediaInput.files && mediaInput.files[0];
+
+  if (!text && !file) return;
+
   if (!currentUser || !activePartner) {
     alert(t("chooseChatFirst"));
     return;
   }
 
+  if (file) {
+    const validationError = validateImageFile(file);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    try {
+      const base64 = await readFileAsBase64(file);
+
+      socket.emit("chatMessage", {
+        from: currentUser,
+        to: activePartner,
+        messageType: "image",
+        media: {
+          data: base64,
+          name: file.name,
+          mime: file.type,
+          size: file.size
+        }
+      });
+
+      mediaInput.value = "";
+      messageInput.value = "";
+      updateSelectedMediaPreview();
+      messageInput.focus();
+      return;
+    } catch (err) {
+      console.error("Error reading image:", err);
+      alert(t("requestError"));
+      return;
+    }
+  }
+
   socket.emit("chatMessage", {
     from: currentUser,
     to: activePartner,
+    messageType: "text",
     text
   });
 

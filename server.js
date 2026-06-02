@@ -34,7 +34,9 @@ if (process.env.NODE_ENV === "production") {
 
 
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  maxHttpBufferSize: 5 * 1024 * 1024
+});
 
 const PORT = process.env.PORT || 3000;
 
@@ -697,7 +699,7 @@ io.on("connection", (socket) => {
 
     if (type === "image") {
       const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
-      const maxSize = 1024 * 1024; // 1MB
+      const maxSize = 2 * 1024 * 1024; // 1MB
 
       if (!allowedTypes.includes(media.mime)) {
         console.error("Unsupported image type:", media.mime);

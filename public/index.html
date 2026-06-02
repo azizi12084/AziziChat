@@ -225,7 +225,20 @@
             </div>
 
             <form id="chatForm" class="input-bar">
-              <input type="text" id="message" class="message-input" placeholder="اكتب رسالتك..." required>
+              <input
+                type="file"
+                id="mediaInput"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                style="display: none;"
+              >
+
+              <button type="button" class="btn btn-media" id="btnChooseMedia" title="Choose image">
+                📎
+              </button>
+              <div id="selectedMediaPreview" class="selected-media-preview" style="display: none;"></div>
+
+              <input type="text" id="message" class="message-input" placeholder="Type your message...">
+
               <button type="submit" class="btn btn-main">إرسال</button>
             </form>
           </div>

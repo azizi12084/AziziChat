@@ -103,7 +103,12 @@ userNotFound: "المستخدم غير موجود.",
 wrongPassword: "كلمة المرور غير صحيحة.",
 serverGenericError: "حدث خطأ، حاول مرة أخرى.",
 contactAlreadyExists: "هذا المستخدم موجود بالفعل ضمن جهات اتصالك.",
-friendRequestAlreadyPending: "تم إرسال طلب صداقة لهذا المستخدم مسبقًا وهو قيد الانتظار."
+friendRequestAlreadyPending: "تم إرسال طلب صداقة لهذا المستخدم مسبقًا وهو قيد الانتظار.",
+chooseImageTitle: "اختر صورة",
+imageTooLarge: "يجب أن يكون حجم الصورة 2MB أو أقل.",
+invalidImageType: "الرجاء اختيار ملف صورة صالح.",
+selectedImagePrefix: "تم اختيار:",
+removeImageTitle: "إزالة الصورة"
   },
 
   tr: {
@@ -210,7 +215,12 @@ userNotFound: "Kullanıcı bulunamadı.",
 wrongPassword: "Şifre yanlış.",
 serverGenericError: "Bir hata oluştu. Lütfen tekrar deneyin.",
 contactAlreadyExists: "Bu kullanıcı zaten kişilerinizde mevcut.",
-friendRequestAlreadyPending: "Bu kullanıcıya daha önce arkadaşlık isteği gönderildi ve hâlâ beklemede."
+friendRequestAlreadyPending: "Bu kullanıcıya daha önce arkadaşlık isteği gönderildi ve hâlâ beklemede.",
+chooseImageTitle: "Resim seç",
+imageTooLarge: "Resim boyutu 2MB veya daha az olmalıdır.",
+invalidImageType: "Lütfen geçerli bir resim dosyası seçin.",
+selectedImagePrefix: "Seçildi:",
+removeImageTitle: "Resmi kaldır"
   },
 
   en: {
@@ -317,7 +327,12 @@ userNotFound: "User not found.",
 wrongPassword: "Incorrect password.",
 serverGenericError: "Something went wrong. Please try again.",
 contactAlreadyExists: "This user is already in your contacts.",
-friendRequestAlreadyPending: "A friend request has already been sent to this user and is still pending."
+friendRequestAlreadyPending: "A friend request has already been sent to this user and is still pending.",
+chooseImageTitle: "Choose image",
+imageTooLarge: "Image size must be 2MB or less.",
+invalidImageType: "Please choose a valid image file.",
+selectedImagePrefix: "Selected:",
+removeImageTitle: "Remove image"
   }
 };
 

@@ -1220,3 +1220,78 @@ body.ltr .request-item-info {
 body.ltr .request-item-actions {
   order: 2 !important;
 }
+/* ===== Media messages ===== */
+
+.btn-media {
+  min-width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background: #eef2f7;
+  color: #111827;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.btn-media:hover {
+  background: #e5e7eb;
+}
+
+.chat-image {
+  display: block;
+  max-width: 240px;
+  max-height: 260px;
+  border-radius: 14px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .chat-image {
+    max-width: 180px;
+    max-height: 220px;
+  }
+}
+/* ===== Selected media preview ===== */
+
+.selected-media-preview {
+  max-width: 220px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #eef2f7;
+  color: #111827;
+  font-size: 13px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.selected-media-preview span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-media-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.remove-media-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+@media (max-width: 600px) {
+  .selected-media-preview {
+    max-width: 140px;
+    font-size: 12px;
+  }
+}
