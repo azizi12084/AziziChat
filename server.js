@@ -675,35 +675,68 @@ io.on("connection", (socket) => {
   });
 
   // إرسال رسالة خاصة بين شخصين
-  socket.on("chatMessage", async ({ from, to, text }) => {
-    if (!from || !to || !text) return;
+  socket.on("chatMessage", async ({ from, to, text, messageType, media }) => {
+  if (!from || !to) return;
 
-    try {
-      const { roomId } = await getOrCreatePrivateRoom(from, to);
+  const type = messageType || "text";
 
-      // جلب Id للمُرسل
-      const sender = await usersDb.findUserByUsername(from);
+  if (type === "text" && !text) return;
+  if (type === "image" && !media) return;
 
-      if (!sender) {
-        console.error("Sender user not found in DB");
+  try {
+    const { roomId } = await getOrCreatePrivateRoom(from, to);
+
+    const sender = await usersDb.findUserByUsername(from);
+
+    if (!sender) {
+      console.error("Sender user not found in DB");
+      return;
+    }
+
+    let inserted;
+
+    if (type === "image") {
+      const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
+      const maxSize = 1024 * 1024; // 1MB
+
+      if (!allowedTypes.includes(media.mime)) {
+        console.error("Unsupported image type:", media.mime);
         return;
       }
 
-      const inserted = await messagesDb.createMessage(roomId, sender.Id, text);
-      const msgToSend = {
-        from,
-        to,
-        text,
-        createdAt: inserted.CreatedAt
-      };
+      if (Number(media.size) > maxSize) {
+        console.error("Image is too large");
+        return;
+      }
 
-      const roomName = `room_${roomId}`;
-      // نرسل الرسالة فقط للي في الغرفة (الطرفين)
-      io.to(roomName).emit("chatMessage", msgToSend);
-    } catch (err) {
-      console.error("Error while inserting private message:", err);
+      inserted = await messagesDb.createImageMessage(roomId, sender.Id, {
+        data: media.data,
+        name: media.name,
+        mime: media.mime,
+        size: media.size
+      });
+    } else {
+      inserted = await messagesDb.createTextMessage(roomId, sender.Id, text);
     }
-  });
+
+    const msgToSend = {
+      from,
+      to,
+      text: inserted.Content || "",
+      messageType: inserted.MessageType,
+      mediaData: inserted.MediaData,
+      mediaName: inserted.MediaName,
+      mediaMime: inserted.MediaMime,
+      mediaSize: inserted.MediaSize,
+      createdAt: inserted.CreatedAt
+    };
+
+    const roomName = `room_${roomId}`;
+    io.to(roomName).emit("chatMessage", msgToSend);
+  } catch (err) {
+    console.error("Error while inserting private message:", err);
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
