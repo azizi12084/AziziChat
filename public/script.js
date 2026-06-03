@@ -33,6 +33,8 @@ const messageInput   = document.getElementById("message");
 const mediaInput = document.getElementById("mediaInput");
 const btnChooseMedia = document.getElementById("btnChooseMedia");
 const selectedMediaPreview = document.getElementById("selectedMediaPreview");
+const btnVoiceRecord = document.getElementById("btnVoiceRecord");
+const voicePreview = document.getElementById("voicePreview");
 const contactsSection = document.querySelector('.contacts-section');
 const mainArea = document.querySelector('.main');
 const btnBackToContacts = document.getElementById('btnBackToContacts');
@@ -72,6 +74,11 @@ let verifyTimerInterval = null;
 let currentUser   = null;
 let activePartner = null;
 let pendingUploadMessage = null;
+let mediaRecorder = null;
+let voiceChunks = [];
+let selectedVoiceBlob = null;
+let selectedVoiceMime = "";
+let isRecordingVoice = false;
 
 function applyLanguage(langOverride) {
   const lang = langOverride || getCurrentLanguage();
@@ -188,6 +195,9 @@ function applyLanguage(langOverride) {
   if (sendButton) sendButton.textContent = t("sendButton", lang);
   if (btnChooseMedia) {
       btnChooseMedia.title = t("chooseImageTitle", lang);
+  }
+  if (btnVoiceRecord) {
+    btnVoiceRecord.title = t("recordVoiceTitle", lang);
   }
   if (mediaInput && mediaInput.files && mediaInput.files[0] && messageInput) {
     messageInput.placeholder = t("imageSelectedPlaceholder", lang);
@@ -636,8 +646,13 @@ function appendMessage(senderUsername, text, createdAt, messageType = "text", me
     });
 
     content.appendChild(img);
-  }
-  else {
+  } else if (messageType === "audio" && media && media.data && media.mime) {
+    const audio = document.createElement("audio");
+    audio.className = "chat-audio";
+    audio.controls = true;
+    audio.src = `data:${media.mime};base64,${media.data}`;
+    content.appendChild(audio);
+  } else {
     content.textContent = text || "";
   }
 
@@ -934,7 +949,7 @@ socket.on("chatMessage", (msg) => {
   const pair2 = [currentUser, activePartner].sort().join("-");
   if (pair1 !== pair2) return;
 
-  if (msg.messageType === "image" && msg.from === currentUser) {
+  if ((msg.messageType === "image" || msg.messageType === "audio") && msg.from === currentUser) {
     removePendingUploadMessage();
   }
   appendMessage(
@@ -1027,6 +1042,170 @@ function updateSelectedMediaPreview() {
   }
 }
 
+function getSupportedAudioMimeType() {
+  const types = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/ogg;codecs=opus",
+    "audio/ogg",
+    "audio/mp4"
+  ];
+
+  for (const type of types) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
+  }
+
+  return "";
+}
+
+function updateVoicePreview() {
+  if (!voicePreview || !messageInput) return;
+
+  if (!selectedVoiceBlob) {
+    voicePreview.style.display = "none";
+    voicePreview.innerHTML = "";
+
+    if (!mediaInput || !(mediaInput.files && mediaInput.files[0])) {
+      messageInput.disabled = false;
+      messageInput.placeholder = t("messagePlaceholder");
+    }
+
+    return;
+  }
+
+  voicePreview.style.display = "flex";
+  voicePreview.innerHTML = `
+    <span>🎙️ ${t("voiceReady")}</span>
+    <button type="button" class="remove-voice-btn" id="btnRemoveVoice" title="${t("removeVoiceTitle")}">×</button>
+  `;
+
+  messageInput.value = "";
+  messageInput.disabled = true;
+  messageInput.placeholder = t("voiceReady");
+
+  const removeBtn = document.getElementById("btnRemoveVoice");
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      selectedVoiceBlob = null;
+      selectedVoiceMime = "";
+      updateVoicePreview();
+    });
+  }
+}
+
+async function startVoiceRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+    alert(t("audioNotSupported"));
+    return;
+  }
+
+  if (mediaInput && mediaInput.files && mediaInput.files[0]) {
+    alert(t("removeImageTitle"));
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = getSupportedAudioMimeType();
+
+    voiceChunks = [];
+    selectedVoiceBlob = null;
+    selectedVoiceMime = "";
+
+    mediaRecorder = mimeType
+      ? new MediaRecorder(stream, { mimeType })
+      : new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        voiceChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      selectedVoiceMime = mediaRecorder.mimeType || mimeType || "audio/webm";
+      selectedVoiceBlob = new Blob(voiceChunks, { type: selectedVoiceMime });
+
+      stream.getTracks().forEach(track => track.stop());
+
+      isRecordingVoice = false;
+
+      if (btnVoiceRecord) {
+        btnVoiceRecord.classList.remove("recording");
+        btnVoiceRecord.textContent = "🎤";
+        btnVoiceRecord.title = t("recordVoiceTitle");
+      }
+
+      updateVoicePreview();
+    };
+
+    mediaRecorder.start();
+    isRecordingVoice = true;
+
+    if (btnVoiceRecord) {
+      btnVoiceRecord.classList.add("recording");
+      btnVoiceRecord.textContent = "⏹";
+      btnVoiceRecord.title = t("stopRecording");
+    }
+
+    if (voicePreview) {
+      voicePreview.style.display = "flex";
+      voicePreview.innerHTML = `<span>🔴 ${t("recordingVoice")}</span>`;
+    }
+
+    messageInput.value = "";
+    messageInput.disabled = true;
+    messageInput.placeholder = t("recordingVoice");
+
+  } catch (err) {
+    console.error("Microphone error:", err);
+    alert(t("microphoneError"));
+  }
+}
+
+function stopVoiceRecording() {
+  if (mediaRecorder && isRecordingVoice) {
+    mediaRecorder.stop();
+  }
+}
+
+function validateAudioBlob(blob) {
+  const maxSize = 2 * 1024 * 1024; // 2MB
+
+  if (blob.size > maxSize) {
+    return t("audioTooLarge");
+  }
+
+  return null;
+}
+
+function showPendingVoiceUploadMessage() {
+  clearEmptyChatPlaceholder();
+
+  const div = document.createElement("div");
+  div.classList.add("msg", "self", "pending-upload-message");
+
+  const content = document.createElement("div");
+  content.textContent = t("uploadingVoice");
+
+  div.appendChild(content);
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  pendingUploadMessage = div;
+}
+
+if (btnVoiceRecord) {
+  btnVoiceRecord.addEventListener("click", () => {
+    if (isRecordingVoice) {
+      stopVoiceRecording();
+    } else {
+      startVoiceRecording();
+    }
+  });
+}
 /* ================== إرسال رسالة ================== */
 
 if (btnChooseMedia && mediaInput) {
@@ -1065,12 +1244,50 @@ chatForm.addEventListener("submit", async (e) => {
 
   const text = messageInput.value.trim();
   const file = mediaInput && mediaInput.files && mediaInput.files[0];
-
-  if (!text && !file) return;
+  const voiceBlob = selectedVoiceBlob;
+  if (!text && !file && !voiceBlob) return;
 
   if (!currentUser || !activePartner) {
     alert(t("chooseChatFirst"));
     return;
+  }
+  if (voiceBlob) {
+    const validationError = validateAudioBlob(voiceBlob);
+
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    try {
+      showPendingVoiceUploadMessage();
+
+      const base64 = await readFileAsBase64(voiceBlob);
+
+      socket.emit("chatMessage", {
+        from: currentUser,
+        to: activePartner,
+        messageType: "audio",
+        media: {
+          data: base64,
+          name: "voice-message.webm",
+          mime: selectedVoiceMime || voiceBlob.type || "audio/webm",
+          size: voiceBlob.size
+        }
+      });
+
+      selectedVoiceBlob = null;
+      selectedVoiceMime = "";
+      updateVoicePreview();
+      messageInput.value = "";
+      messageInput.focus();
+      return;
+    } catch (err) {
+      console.error("Error sending voice message:", err);
+      removePendingUploadMessage();
+      alert(t("requestError"));
+      return;
+    }
   }
 
   if (file) {

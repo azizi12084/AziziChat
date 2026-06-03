@@ -1402,3 +1402,73 @@ body.ltr .request-item-actions {
     min-width: 0;
   }
 }
+/* ===== Voice messages ===== */
+
+.btn-voice {
+  min-width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background: #eef2f7;
+  color: #111827;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.btn-voice:hover {
+  background: #e5e7eb;
+}
+
+.btn-voice.recording {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.voice-preview {
+  min-width: 120px;
+  max-width: 220px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: #eef2f7;
+  color: #111827;
+  font-size: 13px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.voice-preview span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-voice-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.chat-audio {
+  width: 220px;
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .voice-preview {
+    max-width: 120px;
+    min-width: 95px;
+    font-size: 12px;
+  }
+
+  .chat-audio {
+    width: 180px;
+  }
+}
