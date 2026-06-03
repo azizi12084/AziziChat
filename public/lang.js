@@ -108,10 +108,16 @@ chooseImageTitle: "اختر صورة",
 imageTooLarge: "يجب أن يكون حجم الصورة 2MB أو أقل.",
 invalidImageType: "الرجاء اختيار ملف صورة صالح.",
 selectedImagePrefix: "تم اختيار:",
-removeImageTitle: "إزالة الصورة"
+removeImageTitle: "إزالة الصورة",
+imageSelectedPlaceholder: "تم اختيار صورة",
+uploadingImage: "جاري إرسال الصورة...",
+openImageTitle: "فتح الصورة"
   },
 
   tr: {
+    imageSelectedPlaceholder: "Resim seçildi",
+uploadingImage: "Resim yükleniyor...",
+openImageTitle: "Resmi aç",
     appSubtitle: "Sohbete başlamak için giriş yapın veya yeni bir hesap oluşturun",
     loginTab: "Giriş Yap",
     registerTab: "Hesap Oluştur",
@@ -224,6 +230,9 @@ removeImageTitle: "Resmi kaldır"
   },
 
   en: {
+    imageSelectedPlaceholder: "Image selected",
+uploadingImage: "Uploading image...",
+openImageTitle: "Open image",
     appSubtitle: "Log in or create a new account to start chatting",
     loginTab: "Login",
     registerTab: "Create Account",
