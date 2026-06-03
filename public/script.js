@@ -646,13 +646,27 @@ function appendMessage(senderUsername, text, createdAt, messageType = "text", me
     });
 
     content.appendChild(img);
+  
+
+
+
   } else if (messageType === "audio" && media && media.data && media.mime) {
     const audio = document.createElement("audio");
     audio.className = "chat-audio";
     audio.controls = true;
-    audio.src = `data:${media.mime};base64,${media.data}`;
+    audio.preload = "metadata";
+
+    const cleanMime = media.mime.split(";")[0] || "audio/webm";
+
+    const source = document.createElement("source");
+    source.src = `data:${cleanMime};base64,${media.data}`;
+    source.type = cleanMime;
+
+    audio.appendChild(source);
     content.appendChild(audio);
-  } else {
+  }
+
+  else {
     content.textContent = text || "";
   }
 
@@ -1271,7 +1285,7 @@ chatForm.addEventListener("submit", async (e) => {
         media: {
           data: base64,
           name: "voice-message.webm",
-          mime: selectedVoiceMime || voiceBlob.type || "audio/webm",
+          mime: (selectedVoiceMime || voiceBlob.type || "audio/webm").split(";")[0],
           size: voiceBlob.size
         }
       });
