@@ -683,8 +683,7 @@ io.on("connection", (socket) => {
   const type = messageType || "text";
 
   if (type === "text" && !text) return;
-  if (type === "image" && !media) return;
-
+  if ((type === "image" || type === "audio") && !media) return;
   try {
     const { roomId } = await getOrCreatePrivateRoom(from, to);
 
@@ -699,7 +698,7 @@ io.on("connection", (socket) => {
 
     if (type === "image") {
       const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
-      const maxSize = 2 * 1024 * 1024; // 1MB
+      const maxSize = 2 * 1024 * 1024; // 2MB
 
       if (!allowedTypes.includes(media.mime)) {
         console.error("Unsupported image type:", media.mime);
@@ -712,11 +711,43 @@ io.on("connection", (socket) => {
       }
 
       inserted = await messagesDb.createImageMessage(roomId, sender.Id, {
+        messageType: "image",
         data: media.data,
         name: media.name,
         mime: media.mime,
         size: media.size
       });
+    } else if (type === "audio") {
+      const allowedTypes = [
+        "audio/webm",
+        "audio/ogg",
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/wav",
+        "audio/mp4"
+      ];
+
+      const maxSize = 2 * 1024 * 1024; // 2MB
+
+      if (!allowedTypes.includes(media.mime)) {
+        console.error("Unsupported audio type:", media.mime);
+        return;
+      }
+
+      if (Number(media.size) > maxSize) {
+        console.error("Audio is too large");
+        return;
+      }
+
+      inserted = await messagesDb.createImageMessage(roomId, sender.Id, {
+        messageType: "audio",
+        data: media.data,
+        name: media.name,
+        mime: media.mime,
+        size: media.size
+      });
+
+      
     } else {
       inserted = await messagesDb.createTextMessage(roomId, sender.Id, text);
     }
