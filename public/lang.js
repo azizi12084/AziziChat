@@ -1,5 +1,14 @@
 const LANGUAGES = {
   ar: {
+    recordVoiceTitle: "تسجيل رسالة صوتية",
+recordingVoice: "جاري التسجيل...",
+voiceReady: "الرسالة الصوتية جاهزة",
+stopRecording: "إيقاف التسجيل",
+microphoneError: "تعذر الوصول إلى الميكروفون.",
+audioTooLarge: "يجب أن يكون حجم الرسالة الصوتية 2MB أو أقل.",
+audioNotSupported: "تسجيل الصوت غير مدعوم في هذا المتصفح.",
+removeVoiceTitle: "حذف التسجيل الصوتي",
+uploadingVoice: "جاري إرسال الرسالة الصوتية...",
     appSubtitle: "سجل الدخول أو أنشئ حسابًا جديدًا للبدء في الدردشة",
     loginTab: "تسجيل الدخول",
     registerTab: "إنشاء حساب",
@@ -115,6 +124,15 @@ openImageTitle: "فتح الصورة"
   },
 
   tr: {
+    recordVoiceTitle: "Sesli mesaj kaydet",
+recordingVoice: "Kaydediliyor...",
+voiceReady: "Sesli mesaj hazır",
+stopRecording: "Kaydı durdur",
+microphoneError: "Mikrofona erişilemedi.",
+audioTooLarge: "Sesli mesaj 2MB veya daha küçük olmalıdır.",
+audioNotSupported: "Bu tarayıcıda ses kaydı desteklenmiyor.",
+removeVoiceTitle: "Sesli mesajı kaldır",
+uploadingVoice: "Sesli mesaj gönderiliyor...",
     imageSelectedPlaceholder: "Resim seçildi",
 uploadingImage: "Resim yükleniyor...",
 openImageTitle: "Resmi aç",
@@ -230,6 +248,15 @@ removeImageTitle: "Resmi kaldır"
   },
 
   en: {
+    recordVoiceTitle: "Record voice message",
+recordingVoice: "Recording...",
+voiceReady: "Voice message ready",
+stopRecording: "Stop recording",
+microphoneError: "Could not access microphone.",
+audioTooLarge: "Voice message must be 2MB or less.",
+audioNotSupported: "Audio recording is not supported in this browser.",
+removeVoiceTitle: "Remove voice message",
+uploadingVoice: "Uploading voice message...",
     imageSelectedPlaceholder: "Image selected",
 uploadingImage: "Uploading image...",
 openImageTitle: "Open image",

@@ -88,7 +88,7 @@ async function createImageMessage(roomId, userId, media) {
       mediamime,
       mediasize
     )
-    VALUES ($1, $2, '', 'image', $3, $4, $5, $6)
+    VALUES ($1, $2, '', $3, $4, $5, $6, $7)
     RETURNING
       id,
       roomid,
@@ -106,6 +106,7 @@ async function createImageMessage(roomId, userId, media) {
     [
       roomId,
       userId,
+      media.messageType || "image",
       media.data,
       media.name,
       media.mime,
