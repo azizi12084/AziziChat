@@ -729,7 +729,11 @@ io.on("connection", (socket) => {
 
       const maxSize = 2 * 1024 * 1024; // 2MB
 
-      if (!allowedTypes.includes(media.mime)) {
+      const isAllowedAudioType = allowedTypes.some(type =>
+        media.mime && media.mime.startsWith(type)
+      );
+
+      if (!isAllowedAudioType) {
         console.error("Unsupported audio type:", media.mime);
         return;
       }
