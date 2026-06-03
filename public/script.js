@@ -71,6 +71,7 @@ let verifyTimerInterval = null;
 
 let currentUser   = null;
 let activePartner = null;
+let pendingUploadMessage = null;
 
 function applyLanguage(langOverride) {
   const lang = langOverride || getCurrentLanguage();
@@ -186,8 +187,11 @@ function applyLanguage(langOverride) {
   const sendButton = document.querySelector('#chatForm button[type="submit"]');
   if (sendButton) sendButton.textContent = t("sendButton", lang);
   if (btnChooseMedia) {
-    btnChooseMedia.title = t("chooseImageTitle", lang);
-}
+      btnChooseMedia.title = t("chooseImageTitle", lang);
+  }
+  if (mediaInput && mediaInput.files && mediaInput.files[0] && messageInput) {
+    messageInput.placeholder = t("imageSelectedPlaceholder", lang);
+  }
 }
 
 function showInitialScreen() {
@@ -625,8 +629,15 @@ function appendMessage(senderUsername, text, createdAt, messageType = "text", me
     img.className = "chat-image";
     img.src = `data:${media.mime};base64,${media.data}`;
     img.alt = media.name || "image";
+    img.title = t("openImageTitle");
+
+    img.addEventListener("click", () => {
+      openImageViewer(img.src, media.name || "image");
+    });
+
     content.appendChild(img);
-  } else {
+  }
+  else {
     content.textContent = text || "";
   }
 
@@ -640,6 +651,27 @@ function appendMessage(senderUsername, text, createdAt, messageType = "text", me
 
   messagesDiv.appendChild(div);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function openImageViewer(src, altText) {
+  const overlay = document.createElement("div");
+  overlay.className = "image-viewer-overlay";
+
+  overlay.innerHTML = `
+    <button type="button" class="image-viewer-close">×</button>
+    <img src="${src}" alt="${altText}">
+  `;
+
+  overlay.addEventListener("click", (e) => {
+    if (
+      e.target.classList.contains("image-viewer-overlay") ||
+      e.target.classList.contains("image-viewer-close")
+    ) {
+      overlay.remove();
+    }
+  });
+
+  document.body.appendChild(overlay);
 }
 
 /* ================== تسجيل الدخول ================== */
@@ -902,6 +934,9 @@ socket.on("chatMessage", (msg) => {
   const pair2 = [currentUser, activePartner].sort().join("-");
   if (pair1 !== pair2) return;
 
+  if (msg.messageType === "image" && msg.from === currentUser) {
+    removePendingUploadMessage();
+  }
   appendMessage(
     msg.from,
     msg.text,
@@ -946,30 +981,39 @@ function validateImageFile(file) {
 }
 
 function updateSelectedMediaPreview() {
-  if (!selectedMediaPreview || !mediaInput) return;
+  if (!selectedMediaPreview || !mediaInput || !messageInput) return;
 
   const file = mediaInput.files && mediaInput.files[0];
 
   if (!file) {
     selectedMediaPreview.style.display = "none";
     selectedMediaPreview.innerHTML = "";
+
+    messageInput.disabled = false;
+    messageInput.value = "";
+    messageInput.placeholder = t("messagePlaceholder");
+
     return;
   }
 
   const validationError = validateImageFile(file);
 
+  selectedMediaPreview.style.display = "flex";
+
+  messageInput.value = "";
+  messageInput.disabled = true;
+  messageInput.placeholder = t("imageSelectedPlaceholder");
+
   if (validationError) {
-    selectedMediaPreview.style.display = "flex";
     selectedMediaPreview.classList.add("selected-media-error");
     selectedMediaPreview.innerHTML = `
       <span>${validationError}</span>
       <button type="button" class="remove-media-btn" id="btnRemoveSelectedMedia" title="${t("removeImageTitle")}">×</button>
     `;
   } else {
-    selectedMediaPreview.style.display = "flex";
     selectedMediaPreview.classList.remove("selected-media-error");
     selectedMediaPreview.innerHTML = `
-      <span>${t("selectedImagePrefix")} ${file.name}</span>
+      <span class="selected-media-name">📎 ${file.name}</span>
       <button type="button" class="remove-media-btn" id="btnRemoveSelectedMedia" title="${t("removeImageTitle")}">×</button>
     `;
   }
@@ -993,6 +1037,29 @@ if (btnChooseMedia && mediaInput) {
 if (mediaInput) {
   mediaInput.addEventListener("change", updateSelectedMediaPreview);
 }
+function showPendingUploadMessage() {
+  clearEmptyChatPlaceholder();
+
+  const div = document.createElement("div");
+  div.classList.add("msg", "self", "pending-upload-message");
+
+  const content = document.createElement("div");
+  content.textContent = t("uploadingImage");
+
+  div.appendChild(content);
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  pendingUploadMessage = div;
+}
+
+function removePendingUploadMessage() {
+  if (pendingUploadMessage) {
+    pendingUploadMessage.remove();
+    pendingUploadMessage = null;
+  }
+}
+
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -1015,6 +1082,7 @@ chatForm.addEventListener("submit", async (e) => {
     }
 
     try {
+      showPendingUploadMessage();
       const base64 = await readFileAsBase64(file);
 
       socket.emit("chatMessage", {
