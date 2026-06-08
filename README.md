@@ -1,231 +1,255 @@
 # AziziChat
 
-AziziChat is a full-stack real-time chat application built with HTML, CSS, JavaScript, Node.js, Express.js, Socket.IO, and PostgreSQL.
+AziziChat is a full-stack real-time chat application developed as a software engineering project.
+The system allows users to register, verify their email, log in, add contacts, exchange text messages, send images, and record voice messages in real time.
 
-The application allows users to register, verify their email, log in, manage contacts, send friend requests, and exchange real-time private messages.
-
----
-
-## 🌐 Live Demo
-
-The project is deployed on Render:
+## Live Demo
 
 https://azizichat.onrender.com
 
----
+## Repository
 
-## 🚀 Features
+https://github.com/azizi12084/AziziChat
 
-- User registration and login
-- Email verification system
-- Secure password hashing with bcrypt
-- Contact list management
-- Send, accept, and reject friend requests
-- Private chat rooms between users
-- Real-time messaging using Socket.IO
-- Message storage in PostgreSQL
-- Last login tracking
-- Responsive web interface
-- Live deployment on Render
+## Project Status
 
----
+The project is currently active and deployed on Render.
+The current version supports:
 
-## 🛠️ Tech Stack
+* User registration and login
+* Email verification with a verification code
+* Real-time private messaging
+* Contact request system
+* Text messages
+* Image messages
+* Voice message recording and playback
+* Multilingual interface: English, Arabic, and Turkish
+* RTL / LTR layout support
+* PostgreSQL database storage
+* Deployment on Render
+
+The next planned phase is adding notifications for new messages.
+
+## Features
+
+### Authentication
+
+* User registration with username, email, and password
+* Secure password hashing using bcrypt
+* Login using username or email
+* Email verification before account activation
+* Verification code resend system
+
+### Contacts
+
+* Add users by username
+* Send friend/contact requests
+* Accept or reject incoming requests
+* View contact list
+* Search contacts
+
+### Real-Time Chat
+
+* Real-time private messaging using Socket.IO
+* Private rooms for conversations
+* Message history loaded from the database
+* Automatic chat updates without page refresh
+
+### Media Messages
+
+* Send images inside conversations
+* Image preview before sending
+* Image size validation
+* Open sent images in a larger viewer
+* Record and send voice messages
+* Play voice messages directly inside the chat
+* Media messages are stored in PostgreSQL for this academic/demo version
+
+### Multilingual Interface
+
+AziziChat supports three interface languages:
+
+* English
+* Arabic
+* Turkish
+
+The application also supports both:
+
+* LTR layout for English and Turkish
+* RTL layout for Arabic
+
+### Responsive Design
+
+The interface is designed to work on:
+
+* Desktop browsers
+* Mobile browsers
+* Different screen sizes
+
+## Tech Stack
 
 ### Frontend
 
-- HTML
-- CSS
-- JavaScript
+* HTML
+* CSS
+* JavaScript
+* Socket.IO Client
 
 ### Backend
 
-- Node.js
-- Express.js
-- Socket.IO
+* Node.js
+* Express.js
+* Socket.IO
+* PostgreSQL
+* bcrypt
+* Helmet
+* dotenv
 
 ### Database
 
-- PostgreSQL
-- Neon PostgreSQL
+* PostgreSQL
+* Neon PostgreSQL
 
-### Security
+### Deployment
 
-- bcrypt
-- Helmet
-- dotenv
+* Render
+* GitHub
 
-### Email
+## Database Tables
 
-- Resend API
+The main database tables are:
 
-### Deployment and Tools
+* `Users`
+* `Rooms`
+* `Contacts`
+* `Messages`
 
-- Render
-- Git
-- GitHub
-- VS Code
+The `Messages` table supports text and media messages using fields such as:
 
----
+* `Content`
+* `MessageType`
+* `MediaData`
+* `MediaName`
+* `MediaMime`
+* `MediaSize`
 
-## 📁 Project Structure
+## How to Run Locally
 
-```text
-AziziChat/
-│
-├── public/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-│
-├── db/
-│   ├── users.js
-│   ├── contacts.js
-│   ├── rooms.js
-│   └── messages.js
-│
-├── db_pg.js
-├── server.js
-├── schema_pg.sql
-├── run_schema_pg.js
-├── package.json
-├── package-lock.json
-├── Dockerfile
-├── .dockerignore
-├── .gitignore
-└── README.md
-```
-
----
-
-## 🗄️ Database Structure
-
-The project uses PostgreSQL as the main database.
-
-Main tables:
-
-- Users
-- Contacts
-- Rooms
-- Messages
-
-Database operations are organized inside the `db/` folder:
-
-- `users.js` → user queries
-- `contacts.js` → contact and friend request queries
-- `rooms.js` → private chat room queries
-- `messages.js` → message queries
-
-This structure keeps database code separate from `server.js`.
-
----
-
-## 📸 Screenshots
-
-### Login Page
-
-![Login Page](login.png)
-
-### Register Page
-
-![Register Page](register.png)
-
----
-
-## ⚙️ How to Run Locally
-
-Clone the project:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/azizi12084/AziziChat.git
 cd AziziChat
 ```
 
-Install dependencies:
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-Create a `.env` file in the project root.
+### 3. Create `.env` file
 
-Then run the project:
+Create a `.env` file in the project root and add the required environment variables.
+
+Example:
+
+```env
+PORT=3000
+DATABASE_URL=your_postgresql_connection_string
+SMTP_HOST=your_email_host
+SMTP_PORT=your_email_port
+SMTP_USER=your_email_user
+SMTP_PASS=your_email_password
+```
+
+### 4. Run the database schema
+
+```bash
+node run_schema_pg.js
+```
+
+### 5. Start the server
 
 ```bash
 npm start
 ```
 
-Or:
+or:
 
 ```bash
 node server.js
 ```
 
-Open the app in the browser:
+The application will run on:
 
 ```text
 http://localhost:3000
 ```
 
----
+## Important Notes
 
-## 🔐 Environment Variables
+For this academic version, media files are stored in PostgreSQL as Base64 data.
+This approach is simple and useful for demonstration purposes.
 
-Create a `.env` file and add the required values:
+For a production-level system, it would be better to store media files in a dedicated storage service such as:
 
-```env
-DATABASE_URL=your_postgresql_connection_string
-SESSION_SECRET=your_session_secret
+* AWS S3
+* Cloudinary
+* Firebase Storage
+* Supabase Storage
 
-RESEND_API_KEY=your_resend_api_key
-EMAIL_FROM=your_verified_sender_email
+Then only the media URL should be stored in the database.
 
-NODE_ENV=development
-PORT=3000
-```
+## Completed Development Phases
 
-The `.env` file is not uploaded to GitHub for security reasons.
+### Phase 1: Chat Placeholder Fix
 
----
+Fixed the issue where the empty chat message stayed visible after sending the first message.
 
-## 📊 Project Status
+### Phase 2: Multilingual Support
 
-The project is currently working and deployed on Render.
+Added English, Arabic, and Turkish language support with RTL/LTR layout handling.
 
-Current completed parts:
+### Phase 3: Image Messages
 
-- User registration
-- Email verification
-- User login
-- Contact management
-- Friend requests
-- Private chat rooms
-- Real-time messaging
-- PostgreSQL database storage
-- Render deployment
+Added image sending, image preview, validation, storage, and display in chat history.
 
----
+### Phase 3.5: Image UX Improvements
 
-## 💡 What I Learned
+Improved the image selection interface, added upload feedback, disabled text input when an image is selected, and added image viewer support.
 
-In this project, I practiced:
+### Phase 3.6: Voice Messages
 
-- HTML, CSS, and JavaScript
-- Responsive web design
-- DOM manipulation
-- REST API usage
-- Node.js and Express.js
-- Socket.IO real-time communication
-- PostgreSQL database integration
-- Password hashing with bcrypt
-- Git and GitHub workflow
-- Render deployment
-- Backend code organization
+Added voice recording, sending, storage, and playback inside the chat.
 
----
+## Next Planned Features
 
-## 👤 Developer
+* In-app notifications
+* Unread message counters
+* Browser notifications
+* Better media compression
+* Message read status
+* User profile pictures
+* Online/offline status improvements
 
-**Muhammed Azizi**
+## What I Learned
 
+During this project, I practiced and improved my knowledge in:
+
+* Full-stack web development
+* Real-time communication using Socket.IO
+* PostgreSQL database design
+* Authentication and email verification
+* Secure password hashing
+* Media handling in web applications
+* Responsive UI design
+* Multilingual interfaces
+* Deployment using Render
+* Git and GitHub workflow
+
+## Author
+
+Muhammed Azizi
+Software Engineering Student
 GitHub: https://github.com/azizi12084
